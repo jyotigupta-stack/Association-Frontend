@@ -24,3 +24,34 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.bg-auth-background {
+  position: absolute;
+  inset: 0;
+
+  background-color: #f8fafb;
+
+  background-image:
+    /* Grid vertical */
+    linear-gradient(#e5e7eb 1px, transparent 1px),
+
+    /* Grid horizontal */
+    linear-gradient(90deg, #e5e7eb 1px, transparent 1px),
+
+    /* Radial fade */
+    radial-gradient(
+      33% 33% at 50% 50%,
+      rgba(248, 250, 251, 0) 0%,
+      #367ea2 100%
+    );
+
+  background-size:
+    40px 40px,
+    40px 40px,
+    cover;
+
+  background-repeat:
+    repeat,
+    repeat,
+    no-repeat;
+}
