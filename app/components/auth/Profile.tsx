@@ -42,6 +42,7 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
 
         if (response.ok) {
           const res = await response.json();
+          console.log("Fethed",res);
           setFormData({
             name: res.name || '',
             role: res.associationRole || '',
@@ -202,7 +203,7 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
               <label className="text-xs font-medium text-gray-500">Name</label>
               <input type="text" name="name" value={formData.name} onChange={handleChange}
                 placeholder="Enter Full Name" 
-                className={`input-style text-xs ${errors.name ? 'border-red-500 ring-1 ring-red-500/10' : ''}`} 
+                className={`text-gray-500 input-style text-xs ${errors.name ? 'border-red-500 ring-1 ring-red-500/10' : ''}`} 
               />
               {errors.name && <p className="text-[10px] text-red-500 flex items-center gap-1"><AlertCircle size={10}/> {errors.name}</p>}
             </div>
@@ -227,7 +228,7 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
             <label className="text-xs font-medium text-gray-500">Cricket Association</label>
             <input type="text" name="association" value={formData.association} onChange={handleChange}
               placeholder="Enter Association Name" 
-              className={`input-style text-xs ${errors.association ? 'border-red-500' : ''}`} 
+              className={`text-gray-500 input-style text-xs ${errors.association ? 'border-red-500' : ''}`} 
             />
              {errors.association && <p className="text-[10px] text-red-500">{errors.association}</p>}
           </div>
@@ -237,7 +238,7 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
               <label className="text-xs font-medium text-gray-500">Mobile No.</label>
               <input type="tel" name="mobile" value={formData.mobile} onChange={handleChange}
                 placeholder="10 digit number" 
-                className={`input-style text-xs ${errors.mobile ? 'border-red-500 ring-1 ring-red-500/10' : ''}`} 
+                className={`text-gray-500 input-style text-xs ${errors.mobile ? 'border-red-500 ring-1 ring-red-500/10' : ''}`} 
               />
               {errors.mobile && <p className="text-[10px] text-red-500 flex items-center gap-1"><AlertCircle size={10}/> {errors.mobile}</p>}
             </div>
@@ -245,7 +246,7 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
               <label className="text-xs font-medium text-gray-500">Email</label>
               <input type="email" name="email" value={formData.email} onChange={handleChange}
                 placeholder="Enter Email" 
-                className={`input-style text-xs ${errors.email ? 'border-red-500 ring-1 ring-red-500/10' : ''}`} 
+                className={`text-gray-500 input-style text-xs ${errors.email ? 'border-red-500 ring-1 ring-red-500/10' : ''}`} 
               />
               {errors.email && <p className="text-[10px] text-red-500">{errors.email}</p>}
             </div>

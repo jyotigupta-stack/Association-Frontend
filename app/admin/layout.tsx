@@ -16,7 +16,7 @@ export default function AdminDashboardLayout({
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch("http://localhost:5701/user/me", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/me`, {
           method: "GET",
           credentials: "include", 
         });
