@@ -24,17 +24,27 @@ export default function PerformanceCards() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/analytics/dashboard-stats`, {
-          method: 'GET',
-          credentials: 'include', 
+        // 1. Fetch your existing dashboard stats
+        const statsRes = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/analytics/dashboard-stats`, {
+          credentials: 'include',
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          setCounts(data);
-        }
+        // 2. Fetch the specific user's analyzed video count
+        const videoRes = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/upload/analytics/my-completed-count`, {
+          credentials: 'include',
+        });
+
+        const statsData = statsRes.ok ? await statsRes.json() : {};
+        const videoData = videoRes.ok ? await videoRes.json() : { count: 0 };
+        console.log("Fetched dashboard stats:", statsData);
+        console.log("Fetched video analysis count:", videoData);
+
+        setCounts({
+          ...statsData,
+          videosAnalysed: videoData.count || 0 // Inject the new count
+        });
       } catch (error) {
-        console.error("Error fetching performance stats:", error);
+        console.error("Error fetching dashboard data:", error);
       } finally {
         setLoading(false);
       }
@@ -42,7 +52,6 @@ export default function PerformanceCards() {
 
     fetchStats();
   }, []);
-
   // 3. Map the dynamic data to your existing UI structure
   const stats = [
     { 
@@ -84,7 +93,7 @@ export default function PerformanceCards() {
           stats.map((stat, i) => (
             <div key={i} className="p-4 rounded-2xl border border-gray-100 bg-[#FFFFFF] flex justify-between items-start transition-all hover:shadow-sm">
               <div>
-                <p className="text-sm text-gray-400 font-medium mb-2">{stat.label}</p>
+                <p className="text-sm text-gray-700 font-medium mb-2">{stat.label}</p>
                 <h3 className="text-2xl font-bold text-slate-900">{stat.value}</h3>
               </div>
               <div className={`p-3 rounded-full ${stat.bg}`}>{stat.icon}</div>

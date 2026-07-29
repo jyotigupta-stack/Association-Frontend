@@ -14,27 +14,32 @@ export default function TournamentDetails() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTournaments = async () => {
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_Backend_URL}/tournaments/all`,
-          {
-            credentials: "include",
-          }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          // We save all data now, no slicing
-          setTournaments(data);
+  const fetchTournaments = async () => {
+    try {
+      
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_Backend_URL}/tournaments/operator-tournaments`,
+        {
+          method: 'GET',
+          credentials: "include", 
         }
-      } catch (error) {
-        console.error("Failed to fetch tournament details:", error);
-      } finally {
-        setLoading(false);
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setTournaments(data);
+      } else if (response.status === 403) {
+        console.error("Access Denied: You must be logged in as an Association.");
       }
-    };
-    fetchTournaments();
-  }, []);
+    } catch (error) {
+      console.error("Failed to fetch operator tournament details:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchTournaments();
+}, []);
 
   const calculateProgress = (start: string, end: string) => {
     const startDate = new Date(start).getTime();
@@ -164,4 +169,4 @@ export default function TournamentDetails() {
 //login for server acess
 // chmod 400 jyoti-association-backend.pem
 // (base) apple@apples-MacBook-Air Downloads % ssh -i jyoti-association-backend.pem admin@3.110.193.0
-// hostname contains invalid characters
+

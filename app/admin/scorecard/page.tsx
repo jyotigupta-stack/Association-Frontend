@@ -219,3 +219,5 @@ const ScoreCard: React.FC = () => {
 };
 
 export default ScoreCard;
+
+

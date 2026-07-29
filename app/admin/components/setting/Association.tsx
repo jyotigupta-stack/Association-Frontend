@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Loader2, CheckCircle2, AlertCircle, Save } from 'lucide-react';
+import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 // --- Sub-components ---
 
@@ -36,7 +38,7 @@ const InputField: React.FC<{
   </div>
 );
 
-// SwitchField remains the same...
+// SwitchField remains the same
 const SwitchField: React.FC<{ label: string; sub: string; checked: boolean; onChange: () => void }> = ({ label, sub, checked, onChange }) => (
   <div className="flex items-center justify-between py-2">
     <div>
@@ -53,7 +55,23 @@ const SwitchField: React.FC<{ label: string; sub: string; checked: boolean; onCh
   </div>
 );
 
-// --- Main Association Page ---
+const PhoneInputField = ({ label, value, onChange, error }: { label: string, value: string, onChange: (val: string | undefined) => void, error?: string }) => (
+  <div className="flex flex-col gap-2 flex-1">
+    <label className="text-xs font-medium text-gray-500">{label}</label>
+    <div className={`w-full border rounded-xl p-1 bg-gray-50 transition-all ${error ? 'border-red-500 bg-red-50/30' : 'border-gray-100 focus-within:border-indigo-500'}`}>
+      <PhoneInput
+        international
+        defaultCountry="IN"
+        value={value}
+        onChange={onChange}
+        className="text-xs text-gray-800 px-2 py-2 outline-none"
+      />
+    </div>
+    {error && <span className="text-[10px] text-red-500 font-medium flex items-center gap-1"><AlertCircle size={10} /> {error}</span>}
+  </div>
+);
+
+// Main Association Page 
 
 export const AssociationPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -85,24 +103,24 @@ export const AssociationPage: React.FC = () => {
   const emailRegex = /\S+@\S+\.\S+/;
   const phoneRegex = /^\d{10}$/;
 
-  // 1. Association Name (Required + Alphabets)
+  //  Association Name (Required + Alphabets)
   if (!formData.cricketAssociationName.trim()) {
     newErrors.cricketAssociationName = "Association name is required";
   } else if (!alphaRegex.test(formData.cricketAssociationName)) {
     newErrors.cricketAssociationName = "Name should only contain alphabets";
   }
 
-  // 2. Association Type (Alphabets)
+  //  Association Type (Alphabets)
   if (formData.associationType && !alphaRegex.test(formData.associationType)) {
     newErrors.associationType = "Type should only contain alphabets";
   }
 
-  // 3. Governing Body (Alphabets)
+  //  Governing Body (Alphabets)
   if (formData.associationGoverningBody && !alphaRegex.test(formData.associationGoverningBody)) {
     newErrors.associationGoverningBody = "Governing body should only contain alphabets";
   }
 
-  // 4. Number of Grounds (Numeric)
+  //  Number of Grounds (Numeric)
   if (!formData.numberOfGroundManaged.trim()) {
     newErrors.numberOfGroundManaged = "Required";
   } else if (!numericRegex.test(formData.numberOfGroundManaged)) {
@@ -117,11 +135,9 @@ export const AssociationPage: React.FC = () => {
   }
 
   // 6. Contact Phone (10 Digits)
-  if (!formData.contactPhone.trim()) {
-    newErrors.contactPhone = "Phone number is required";
-  } else if (!phoneRegex.test(formData.contactPhone.trim())) {
-    newErrors.contactPhone = "Must be valid  10 digits";
-  }
+  if (formData.contactPhone && !isValidPhoneNumber(formData.contactPhone)) {
+      newErrors.contactPhone = "Invalid phone number";
+    }
 
   // 7. Primary Ground Name (Alphabets/Spaces)
   if (formData.groundName && !alphaRegex.test(formData.groundName)) {
@@ -146,13 +162,15 @@ export const AssociationPage: React.FC = () => {
         });
         if (response.ok) {
           const data = await response.json();
+          let phone = data.contactPhone || "";
+          if (phone && !phone.startsWith('+')) phone = `+91${phone}`;
           setFormData({
             cricketAssociationName: data.cricketAssociationName || "",
             associationType: data.associationType || "",
             associationGoverningBody: data.associationGoverningBody || "",
             numberOfGroundManaged: data.numberOfGroundManaged || "",
             contactEmail: data.contactEmail || "",
-            contactPhone: data.contactPhone || "",
+            contactPhone: phone || "",
             groundName: data.groundName || "",
             activeGround: data.activeGround || "", 
             liveMatchAlerts: data.liveMatchAlerts ?? true
@@ -168,7 +186,7 @@ export const AssociationPage: React.FC = () => {
   }, []);
 
   const handleSaveChanges = async () => {
-    if (!validateForm()) return; // Stop if validation fails
+    if (!validateForm()) return; 
 
     setSaving(true);
     setSaveSuccess(false);
@@ -182,11 +200,11 @@ export const AssociationPage: React.FC = () => {
 
       if (response.ok) {
         setSaveSuccess(true);
-        setErrors({}); // Clear errors on success
+        setErrors({}); 
         setTimeout(() => setSaveSuccess(false), 3000);
       }
     } catch (error) {
-      console.error("Failed to save settings:", error);
+      console.error("Failed to save setting:", error);
     } finally {
       setSaving(false);
     }
@@ -287,14 +305,12 @@ export const AssociationPage: React.FC = () => {
             placeholder="email@association.com"
             error={errors.contactEmail}
           />
-          <InputField 
-            label="Contact Number" 
-            name="contactPhone" 
-            value={formData.contactPhone} 
-            onChange={handleChange} 
-            placeholder="+91..." 
-            error={errors.contactPhone}
-          />
+         <PhoneInputField 
+        label="Contact Number" 
+        value={formData.contactPhone} 
+        onChange={(val) => setFormData(prev => ({ ...prev, contactPhone: val || "" }))} 
+        error={errors.contactPhone} 
+      />
         </section>
 
         <div className="h-px bg-gray-100 w-full" />

@@ -1,93 +1,152 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Search, ChevronLeft, ChevronRight, Users, MapPin ,FileSpreadsheet} from 'lucide-react';
+
+interface TournamentDetails {
+  name: string;
+  teamCount: number;
+  location: string;
+  startDate: string;
+  endDate: string;
+}
 
 interface Match {
-  id: string; // UUID
-  match_id: number; // Incrementing ID
-  name: string; // "MI vs CSK"
+  id: string;
+  match_id: number;
+  name: string;
   date: string | null;
-  match_no: string;
-  // Computed fields or placeholders for UI
-  score1?: string;
-  score2?: string;
-  statusText?: string;
-  type?: string;
-  isLive?: boolean;
-  team1?: string;
-  team2?: string;
+  match_no?: string;
+  ground_id?: string;
+  team1: string;
+  team2: string;
+  score1: string;
+  score2: string;
+  statusText: string;
+  type: string;
+  isLive: boolean;
+  time: string;
+  sortOrder: number;
+  statusLabel?: string;
+  badgeColor?: string;
 }
 
-interface Props {
+interface UpcomingMatchesProps {
   tournamentId: string | null;
-  selectedMatchId: string | null;
-  onSelectMatch: (id: string) => void;
+  selectedGroundId?: string | null;
+  selectedMatchId?: string | null;
+  onSelectMatch?: (id: string) => void;
 }
 
-const UpcomingMatches = ({ tournamentId, selectedMatchId, onSelectMatch }: Props) => {
+const UpcomingMatches: React.FC<UpcomingMatchesProps> = ({
+  tournamentId,
+  selectedGroundId,
+  selectedMatchId,
+  onSelectMatch
+}) => {
+  const [tournament, setTournament] = useState<TournamentDetails | null>(null);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState("");
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [exporting, setExporting] = useState(false);
+  
+  const itemsPerPage = 12; // 4 columns * 3 rows
   const filters = ['All', 'Live', 'Upcoming', 'Finished'];
+
+  // --- Added: Fetch Tournament Details ---
+  useEffect(() => {
+    const fetchTournamentDetails = async () => {
+      if (!tournamentId) return;
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/tournaments/${tournamentId}`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setTournament(data);
+        }
+      } catch (error) {
+        console.error("Error fetching tournament details:", error);
+      }
+    };
+
+    fetchTournamentDetails();
+  }, [tournamentId]);
+
+  // --- Added: Progress Calculation ---
+  const calculateProgress = () => {
+    if (!tournament || !tournament.startDate || !tournament.endDate) return 0;
+    const now = new Date().getTime();
+    const start = new Date(tournament.startDate).getTime();
+    const end = new Date(tournament.endDate).getTime();
+
+    if (now < start) return 0;
+    if (now > end) return 100;
+
+    const total = end - start;
+    const elapsed = now - start;
+    return Math.round((elapsed / total) * 100);
+  };
 
   useEffect(() => {
     const fetchMatches = async () => {
-      if (!tournamentId) return;
-      
+      if (!tournamentId) {
+        setMatches([]);
+        return;
+      }
+
       setLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/tournament/${tournamentId}`, {
-          method: 'GET',
-          credentials: 'include',
-        });
-        
+        let url = `${process.env.NEXT_PUBLIC_Backend_URL}/matches/tournament/${tournamentId}`;
+        if (selectedGroundId) url += `?groundId=${selectedGroundId}`;
+
+        const response = await fetch(url, { method: 'GET', credentials: 'include' });
         const data = await response.json();
+        console.log("Fetched matches:", data);
         
-        // Process data to add logic for Live/Upcoming/Finished
-        const processedData = (Array.isArray(data) ? data : []).map((match: any) => {
-          const today = new Date().toISOString().split('T')[0];
-          const matchDate = match.date ? new Date(match.date).toISOString().split('T')[0] : '';
-          
-          let isLive = false;
-          let statusText = "UPCOMING";
-          let type = "Upcoming";
-          let sortOrder = 2; // Default for Upcoming
+        const processedData = (Array.isArray(data) ? data : [])
+          .map((match: any) => {
+            const now = new Date();
+            const matchDate = match.date ? new Date(match.date) : null;
+            
+            let statusLabel = "Upcoming";
+            let badgeColor = "bg-green-500";
+            let sortOrder = 2;
 
-          if (matchDate === today) {
-            isLive = true;
-            statusText = "LIVE - 1st Innings";
-            type = "Live";
-            sortOrder = 1; // Highest Priority
-          } else if (matchDate < today && match.date !== null) {
-            isLive = false;
-            statusText = "FINISHED";
-            type = "Finished";
-            sortOrder = 3; // Lowest Priority
-          }
+            if (matchDate) {
+              const isToday = matchDate.toDateString() === now.toDateString();
+              const isPast = matchDate < now && !isToday;
 
-          const teams = match.name?.split(' vs ') || ["T1", "T2"];
+              if (isToday) {
+                statusLabel = "Live";
+                badgeColor = "bg-[#D11B1B]";
+                sortOrder = 1;
+              } else if (isPast) {
+                statusLabel = "Finished";
+                badgeColor = "bg-slate-500";
+                sortOrder = 3;
+              }
+            }
 
-          return {
-            ...match,
-            team1: teams[0],
-            team2: teams[1],
-            score1: isLive ? "NA" : "0/0",
-            score2: isLive ? "NA" : "0/0",
-            statusText,
-            type,
-            isLive,
-            sortOrder // Internal field for sorting
-          };
-        });
+            const teams = match.name?.split(' vs ') || ["T1", "T2"];
+            return {
+              ...match,
+              team1: teams[0] || "T1",
+              team2: teams[1] || "T2",
+              time: matchDate ? matchDate.toLocaleDateString('en-GB') : "TBD",
+              statusLabel,
+              badgeColor,
+              sortOrder,
+              type: statusLabel // Map status to type for filtering
+            };
+          });
 
-        // Sort: Live (1) -> Upcoming (2) -> Finished (3)
-        processedData.sort((a: any, b: any) => a.sortOrder - b.sortOrder);
-
+        processedData.sort((a: Match, b: Match) => a.sortOrder - b.sortOrder);
         setMatches(processedData);
-
-        if (processedData.length > 0 && !selectedMatchId) {
-          onSelectMatch(processedData[0].id);
-        }
       } catch (error) {
         console.error("Error fetching matches:", error);
       } finally {
@@ -96,148 +155,207 @@ const UpcomingMatches = ({ tournamentId, selectedMatchId, onSelectMatch }: Props
     };
 
     fetchMatches();
-  }, [tournamentId, onSelectMatch, selectedMatchId]);
+  }, [tournamentId, selectedGroundId]);
+  const handleExport = () => {
+  // This triggers Step 1 in your router
+  window.location.href = `${process.env.NEXT_PUBLIC_Backend_URL}/export/auth?tournamentId=${tournamentId}`;
+};
 
-  const filteredMatches = matches.filter((match) => {
-    if (activeFilter === 'All') return true;
-    return match.type === activeFilter;
+  // Search & Filter Logic
+  const filtered = matches.filter((m) => {
+    const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         m.match_id.toString().includes(searchQuery);
+    const matchesFilter = activeFilter === 'All' || m.type === activeFilter;
+    return matchesSearch && matchesFilter;
   });
 
+  // Pagination Logic
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const currentItems = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
-    <div className="w-full bg-white rounded-[24px] border border-slate-100 p-6 shadow-xs">
-      {/* Custom Scrollbar Styling */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e2e8f0;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #cbd5e1;
-        }
-      `}} />
+    <div className="space-y-6">
+      {/* Tournament Header (Frame 2147239127 style) */}
+      {tournament && (
+       <div className="w-full bg-white rounded-xl border border-slate-200 p-4 shadow-xs grid grid-cols-1 md:flex md:flex-row items-center gap-4">
+  {/* Tournament Name - Full width on mobile, flexible on desktop */}
+  <div className="w-full md:flex-1 min-w-0">
+    <h1 className="text-lg font-bold text-slate-900 truncate">{tournament.name}</h1>
+  </div>
+  
+  {/* Divider - Hidden on mobile */}
+  <div className="hidden md:block h-8 w-[1px] bg-slate-200" />
 
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-        <h2 className="text-md md:text-lg font-semibold text-slate-900 tracking-tight">
-          Recent & Upcoming Matches
-        </h2>
-        
-        <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
-          {filters.map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className={`px-4 py-1.5 text-sm font-medium transition-all rounded-lg ${
-                activeFilter === filter
-                  ? 'bg-white shadow-sm text-slate-700 border border-slate-100'
-                  : 'text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              {filter}
-            </button>
-          ))}
+  {/* Info Stats - Always centered, uses wrap if screen is very small */}
+  <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 flex-1 w-full">
+    <div className="flex items-center gap-2 text-slate-700 whitespace-nowrap">
+      <Users className="w-5 h-5 text-slate-400" />
+      <span className="text-sm font-medium">{tournament.teamCount} Teams</span>
+    </div>
+    {/* Dot separator */}
+    <div className="text-slate-300 hidden sm:block">•</div>
+    <div className="flex items-center gap-2 text-slate-700 whitespace-nowrap">
+      <MapPin className="w-5 h-5 text-slate-400" />
+      <span className="text-sm font-medium">{tournament.location}</span>
+    </div>
+  </div>
+
+  {/* Divider - Hidden on mobile */}
+  <div className="hidden md:block h-8 w-[1px] bg-slate-200" />
+
+  {/* Progress - Full width on mobile to maintain alignment */}
+  <div className="w-full md:flex-1 flex justify-between md:justify-end items-center gap-2 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+    <span className="text-sm font-medium text-slate-700 whitespace-nowrap">Tournament Progress -</span>
+    <span className="text-md font-bold text-green-600">{calculateProgress()}% Complete</span>
+  </div>
+</div>
+      )}
+
+      {/* Matches Content */}
+      <div className="w-full bg-white rounded-[24px] border border-slate-100 p-6 shadow-xs">
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row justify-between items-center mb-2 gap-4">
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+            Matches
+          </h2>
+
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto">
+            <div className="flex gap-2">
+  <button
+    onClick={handleExport}
+    disabled={exporting}
+    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-xl transition-all disabled:opacity-50"
+  >
+    <FileSpreadsheet className="w-4 h-4" />
+    {exporting ? 'Exporting...' : 'Export'}
+  </button>
+</div>
+            {/* Search Bar */}
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-700 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search match ID or teams..."
+                className="w-full pl-10 pr-4 py-2 text-gray-700 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              />
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex bg-slate-50 rounded-xl border border-slate-100 p-1 w-full md:w-auto">
+              {filters.map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => { setActiveFilter(filter); setCurrentPage(1); }}
+                  className={`flex-1 md:flex-none px-4 py-1.5 text-sm font-medium transition-all rounded-lg ${
+                    activeFilter === filter
+                      ? 'bg-white shadow-sm text-slate-700 border border-slate-100'
+                      : 'text-slate-700 hover:text-slate-600'
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Grid Layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+          {loading ? (
+            <div className="col-span-full py-20 text-center text-slate-400 animate-pulse">Loading matches...</div>
+          ) : currentItems.length > 0 ? (
+            currentItems.map((m) => (
+              <Link 
+                href={`/admin/ground/matchdetail/${m.id}`} 
+                key={m.id} 
+                className="block transition-transform hover:scale-[1.02] active:scale-95"
+              >
+                <div className={`p-4 rounded-[20px] border relative bg-gray-50/30 cursor-pointer hover:shadow-md transition-all h-full ${
+                  selectedMatchId === m.id ? 'border-blue-500 ring-1 ring-blue-500' : 'border-slate-100'
+                }`}>
+                  {/* Badge */}
+                  <span className={`absolute top-4 left-1/2 -translate-x-1/2 text-white text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider ${m.badgeColor}`}>
+                    {m.statusLabel}
+                  </span>
+
+                  <p className="text-center text-[13px] text-black mt-6 mb-4 font-medium">Match ID - {m.match_id}</p>
+                  
+                  <div className="flex justify-between items-center px-1">
+                    <div className="text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-10 h-10 bg-yellow-300 rounded-full overflow-hidden flex items-center justify-center text-[10px] font-bold text-slate-900 border-2 border-white shadow-sm">
+                          {m.team1.substring(0, 2).toUpperCase()}
+                        </div>
+                        <p className="font-bold text-black text-xs truncate w-20 text-center">{m.team1}</p>
+                      </div>
+                    </div>
+
+                    <span className="text-[#D23624] font-semibold text-[10px] bg-white p-2 rounded-full shadow-sm">Vs</span>
+
+                    <div className="text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-10 h-10 bg-indigo-300 rounded-full overflow-hidden flex items-center justify-center text-[10px] font-bold text-slate-900 border-2 border-white shadow-sm">
+                          {m.team2.substring(0, 2).toUpperCase()}
+                        </div>
+                        <p className="font-bold text-black text-xs truncate w-20 text-center">{m.team2}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 mt-2 text-center">
+                    <p className="text-[13px] font-bold text-slate-900">
+                      Date - {m.time}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))
+          ) : (
+            <div className="col-span-full py-20 text-center text-slate-400 border-2 border-dashed border-slate-50 rounded-3xl">
+              No {activeFilter.toLowerCase()} matches found.
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="border border-gray-100 rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px] table-fixed">
-            <thead>
-              <tr className="bg-[#F8FAFC]">
-                <th className="w-[25%] py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Match Details</th>
-                <th className="w-[30%] py-3 px-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Matchup</th>
-                <th className="w-[20%] py-3 px-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Scoreline</th>
-                <th className="w-[25%] py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100 text-right">Status</th>
-              </tr>
-            </thead>
-          </table>
+      {/* Pagination Section */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-6">
+          <button 
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 bg-white border border-gray-100 rounded-md disabled:opacity-50"
+          >
+            <ChevronLeft className="w-4 h-4" /> Back
+          </button>
+          
+          <div className="flex gap-1">
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`w-9 h-9 rounded-md text-sm font-semibold transition-all ${
+                  currentPage === i + 1 
+                    ? 'bg-[#0F1117] text-white shadow-md' 
+                    : 'text-slate-500 hover:bg-slate-100'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+
+          <button 
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 bg-white border border-gray-100 rounded-md disabled:opacity-50"
+          >
+            Next <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
-
-        <div className="overflow-y-auto max-h-[365px] overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse min-w-[700px] table-fixed">
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={4} className="py-10 text-center text-slate-400 text-xs font-medium animate-pulse">
-                    Loading tournament matches...
-                  </td>
-                </tr>
-              ) : filteredMatches.length > 0 ? (
-                filteredMatches.map((match) => {
-                  const isRowSelected = selectedMatchId === match.id;
-                  return (
-                    <tr 
-                      key={match.id} 
-                      onClick={() => onSelectMatch(match.id)}
-                      className={`group transition-colors border-b border-slate-100 last:border-0 cursor-pointer ${
-                        isRowSelected ? 'bg-blue-50/70' : (match.isLive ? 'bg-[#F5F8FF]' : 'hover:bg-slate-50/50')
-                      }`}
-                    >
-                      <td className={`w-[25%] py-3 px-4 ${isRowSelected ? 'border-l-[4px] border-blue-600' : (match.isLive ? 'border-l-[4px] border-blue-400' : 'border-l-[4px] border-transparent')}`}>
-                        <p className="text-sm font-bold text-slate-900 leading-tight">Match {match.match_id}</p>
-                        <p className="text-[11px] text-slate-500 font-medium whitespace-nowrap">
-                          {match.date ? new Date(match.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'TBD'}
-                        </p>
-                      </td>
-
-                      <td className="w-[30%] py-3 px-2">
-                        <div className="flex items-center gap-2">
-                          <div className="flex -space-x-1.5 shrink-0">
-                            <div className="w-7 h-7 rounded-full bg-[#2563EB] flex items-center justify-center text-[9px] font-bold text-white border-2 border-white shadow-sm">
-                              {match.team1?.substring(0, 2).toUpperCase()}
-                            </div>
-                            <div className="w-7 h-7 rounded-full bg-[#FACC15] flex items-center justify-center text-[9px] font-bold text-white border-2 border-white shadow-sm">
-                              {match.team2?.substring(0, 2).toUpperCase()}
-                            </div>
-                          </div>
-                          <span className="text-xs font-semibold text-slate-700 truncate">{match.name}</span>
-                        </div>
-                      </td>
-
-                      <td className="w-[20%] py-3 px-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-900 whitespace-nowrap">{match.score1}</span>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase">vs</span>
-                          <span className="text-xs font-bold text-slate-900 whitespace-nowrap">{match.score2}</span>
-                        </div>
-                      </td>
-
-                      <td className="w-[25%] py-3 px-4 text-right">
-                        {match.isLive ? (
-                          <div className="flex items-center justify-end gap-1.5 text-[#D92D20]">
-                            <span className="w-1.5 h-1.5 bg-[#D92D20] rounded-full animate-pulse"></span>
-                            <span className="text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">{match.statusText}</span>
-                          </div>
-                        ) : (
-                          <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight whitespace-nowrap ${
-                            match.type === 'Upcoming' 
-                              ? 'bg-blue-50 text-blue-600' 
-                              : 'bg-[#ECFDF3] text-[#027A48]'
-                          }`}>
-                            {match.statusText}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={4} className="py-10 text-center text-slate-400 text-xs font-medium">
-                    No {activeFilter.toLowerCase()} matches found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

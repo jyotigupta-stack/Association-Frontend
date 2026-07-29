@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, } from 'react';
 import { SettingsSidebar } from './SettingSidebar';
 import { AccountPage } from './Account';
 import { ChevronLeft } from 'lucide-react';
@@ -9,6 +9,7 @@ import { NotificationSettingPage } from './Notification';
 import { GroundPage } from './Ground';
 import { AnalyticsPage } from './Analytics';
 import { PrivacyDataPage } from './Privacy';
+import { Operators } from './Operators';
 
 export const Setting = () => {
   const [activeTab, setActiveTab] = useState('Accounts');
@@ -30,6 +31,8 @@ export const Setting = () => {
                 return <NotificationSettingPage/>;
                 case 'Grounds':
                     return <GroundPage/>;
+                    case 'Operators':
+                      return <Operators/>;
                     case 'Analytics':
                         return <AnalyticsPage/>;
                         case 'Privacy':
