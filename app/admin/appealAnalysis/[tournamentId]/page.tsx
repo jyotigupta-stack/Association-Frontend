@@ -113,7 +113,7 @@ export default function AppealAnalysisPage() {
       const json = await res.json();
       if (res.ok) {
         const newCommentEntry = {
-          commenter: currentUserName,
+          commentor: currentUserName,
           comment: newComment.trim(),
           created_at: new Date().toISOString(),
         };

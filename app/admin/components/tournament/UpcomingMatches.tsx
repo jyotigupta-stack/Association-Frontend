@@ -230,7 +230,7 @@ const UpcomingMatches: React.FC<UpcomingMatchesProps> = ({
     {exporting ? 'Exporting...' : 'Export'}
   </button> */}
  <Link
-  href={`/admin/appealAnalysis/${tournamentId}?name=${encodeURIComponent(tournament!.name)}`}
+  href={`/admin/appealAnalysis/${tournamentId}?name=${encodeURIComponent(tournament?.name || '')}`}
   className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-xl transition-all cursor-pointer shadow-xs"
 >
   Appeal Analysis
