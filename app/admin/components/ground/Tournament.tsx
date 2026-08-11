@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Search, ChevronLeft, ChevronRight, Users, MapPin } from 'lucide-react';
 import stadiumImage from '../../../../public/stadium.png'; // Ensure this path is correct
+import { apiFetch } from "@/app/lib/api";
 
 interface Tournament {
   id: string;
@@ -33,8 +34,7 @@ const TournamentList: React.FC<TournamentListProps> = ({ groundId }) => {
       if (!groundId) return;
       setLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/tournaments/ground/${groundId}`, {
-          credentials: 'include',
+        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/tournaments/ground/${groundId}`, {
           method: 'GET'
         });
 

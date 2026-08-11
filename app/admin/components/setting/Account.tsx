@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { LocateFixed,CheckCircle2, PenLine, Loader2, Save, AlertCircle, ChevronDown } from 'lucide-react';
 import PhoneInput,{ isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
+import { apiFetch } from "@/app/lib/api";
 
 // --- Types ---
 
@@ -121,9 +122,8 @@ export const AccountPage: React.FC = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/me`, {
+        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/me`, {
           method: 'GET',
-          credentials: 'include',
         });
 
         if (response.ok) {
@@ -233,10 +233,9 @@ export const AccountPage: React.FC = () => {
         data.append('profileImage', selectedFile);
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/updateprofile`, {
+      const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/updateprofile`, {
         method: 'PUT',
         body: data,
-        credentials: 'include',
       });
 
       const resJson = await response.json();

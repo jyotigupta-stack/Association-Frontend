@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { PoseLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 import { Play, Pause, RotateCcw, Settings, Maximize, ArrowRight, ChevronLeft, ArrowLeft, Minimize } from "lucide-react";
+import { apiFetch } from "@/app/lib/api";
 
 
 const CAMERA_MAPPING: Record<string, string> = {
@@ -114,10 +115,9 @@ const toggleFullscreen = () => {
 }, []); // Runs once on mount
   // Fetch Sync View Data
   const fetchSync = async () => {
-  const res = await fetch(
+  const res = await apiFetch(
     `${process.env.NEXT_PUBLIC_Backend_URL}/matches/${matchId}/sync-view?withDownloadUrls=true`,
     {
-      credentials: "include",
     }
   );
 
@@ -287,7 +287,7 @@ useEffect(() => {
     }
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${process.env.NEXT_PUBLIC_Analytics_Backend_URL}/api/webhook/results/${currentFile.analyzed_id}`
       );
 
@@ -415,7 +415,7 @@ const pollAnalysisStatus = async (
 
   const pollInterval = setInterval(async () => {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${process.env.NEXT_PUBLIC_Analytics_Backend_URL}/api/webhook/status/${analyzedId}`
       );
 
@@ -428,14 +428,13 @@ const pollAnalysisStatus = async (
         clearInterval(pollInterval);
 
         // Update backend
-        await fetch(
+        await apiFetch(
           `${process.env.NEXT_PUBLIC_Backend_URL}/upload/file/${fileId}/analysis`,
           {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
             },
-            credentials: "include",
             body: JSON.stringify({
               analyzedvideo_status: "completed",
             }),
@@ -505,7 +504,7 @@ console.log("Available keys:", Object.keys(angleMapping));
 
 console.log("Payload:", payload);
 
-const response = await fetch(
+const response = await apiFetch(
   `${process.env.NEXT_PUBLIC_Analytics_Backend_URL}/api/webhook/upload`,
   {
     method: "POST",
@@ -525,14 +524,13 @@ const response = await fetch(
 
       analyzedId = analysisData.id.toString();
 
-      await fetch(
+      await apiFetch(
         `${process.env.NEXT_PUBLIC_Backend_URL}/upload/file/${currentFile.fileId}/analysis`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "include",
           body: JSON.stringify({
             analyzed_id: analyzedId,
             analyzedvideo_status: "processing",

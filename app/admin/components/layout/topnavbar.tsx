@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Notifications from './Notification';
 import { io, Socket } from 'socket.io-client';
+import { apiFetch } from "@/app/lib/api";
 
 // Define User Interface based on your backend
 interface UserData {
@@ -32,9 +33,8 @@ const socketRef = useRef<Socket | null>(null);
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/me`, {
+        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/me`, {
           method: 'GET',
-          credentials: 'include',
         });
         if (response.ok) {
           const data = await response.json();
@@ -54,8 +54,7 @@ const socketRef = useRef<Socket | null>(null);
   
   const fetchNotifications = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/notifications`, {
-        credentials: "include",
+      const res = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/notifications`, {
       });
       if (res.ok) {
         const data = await res.json();
@@ -87,9 +86,8 @@ const socketRef = useRef<Socket | null>(null);
 
 // Function to handle reading
 const handleMarkAllRead = async () => {
-  await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/notifications/mark-all-read`, {
+  await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/notifications/mark-all-read`, {
     method: 'PUT',
-    credentials: 'include'
   });
   setUnreadCount(0);
 };
@@ -114,9 +112,8 @@ const handleMarkAllRead = async () => {
   const handleLogout = async () => {
   try {
     //  Call the backend to clear the cookie
-    const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/auth/logout`, {
+    const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/auth/logout`, {
       method: 'POST',
-      credentials: 'include', 
     });
 
     if (response.ok) {

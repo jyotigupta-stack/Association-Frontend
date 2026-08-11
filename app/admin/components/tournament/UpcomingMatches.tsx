@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, ChevronLeft, ChevronRight, Users, MapPin ,FileSpreadsheet} from 'lucide-react';
+import { apiFetch } from "@/app/lib/api";
 
 interface TournamentDetails {
   name: string;
@@ -61,9 +62,8 @@ const UpcomingMatches: React.FC<UpcomingMatchesProps> = ({
     const fetchTournamentDetails = async () => {
       if (!tournamentId) return;
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/tournaments/${tournamentId}`, {
+        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/tournaments/${tournamentId}`, {
           method: 'GET',
-          credentials: 'include'
         });
         if (response.ok) {
           const data = await response.json();
@@ -104,7 +104,7 @@ const UpcomingMatches: React.FC<UpcomingMatchesProps> = ({
         let url = `${process.env.NEXT_PUBLIC_Backend_URL}/matches/tournament/${tournamentId}`;
         if (selectedGroundId) url += `?groundId=${selectedGroundId}`;
 
-        const response = await fetch(url, { method: 'GET', credentials: 'include' });
+        const response = await apiFetch(url, { method: 'GET'});
         const data = await response.json();
         console.log("Fetched matches:", data);
         

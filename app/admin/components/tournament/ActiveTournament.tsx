@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import stadiumImage from '../../../../public/stadium.png';
 import {  ChevronLeft, ChevronRight } from 'lucide-react';
+import { apiFetch } from "@/app/lib/api";
 
 interface Tournament {
   id: string;
@@ -30,9 +31,8 @@ export default function ActiveTournaments() {
   useEffect(() => {
     const fetchTournaments = async () => {
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `${process.env.NEXT_PUBLIC_Backend_URL}/tournaments/operator-tournaments`,
-          { credentials: "include" }
         );
 
         if (!response.ok) throw new Error(`Error: ${response.status}`);

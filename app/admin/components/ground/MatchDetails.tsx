@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useMemo,useRef } from 'react';
 import { Search, ChevronDown, ChevronUp, Volleyball, RefreshCwIcon, UserCheck, ChevronLeft, X, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { apiFetch } from "@/app/lib/api";
 
 interface MatchAnalysisProps {
   matchId: string;
@@ -130,7 +131,7 @@ const fetchAppeals = async () => {
     // Constructing the URL with query parameters
     const url = `${process.env.NEXT_PUBLIC_SCORING_API_URL}/api/v1/matches/${matchData.scoring_match_id}/appeals?innings=${innNum}`;
     
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: 'GET',
       headers: {
          "ngrok-skip-browser-warning": "true",
@@ -168,14 +169,14 @@ useEffect(() => {
     const fetchInitialData = async () => {
       try {
         setLoading(true);
-        const mRes = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/${matchId}`, { credentials: 'include' });
+        const mRes = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/${matchId}`, {});
         const associationData = await mRes.json();
         setMatchData(associationData);
         console.log("Association Data:", associationData);
 
         if (associationData?.scoring_match_id) {
           //const sRes = await fetch(`${SCORING_API_BASE}/matches/${associationData.scoring_match_id}/scorecard`);
-          const sRes = await fetch(`${SCORING_API_BASE}/api/v1/matches/${associationData.scoring_match_id}/scorecard`, {
+          const sRes = await apiFetch(`${SCORING_API_BASE}/api/v1/matches/${associationData.scoring_match_id}/scorecard`, {
   headers: {
     "ngrok-skip-browser-warning": "true"
   }
@@ -208,7 +209,7 @@ useEffect(() => {
       const innNum = activeInnings === '1st' ? 1 : 2;
       try {
         //const bRes = await fetch(`${SCORING_API_BASE}/matches/${matchData.scoring_match_id}/innings/${innNum}/balls`);
-        const bRes = await fetch(`${SCORING_API_BASE}/api/v1/matches/${matchData.scoring_match_id}/innings/${innNum}/balls`, {
+        const bRes = await apiFetch(`${SCORING_API_BASE}/api/v1/matches/${matchData.scoring_match_id}/innings/${innNum}/balls`, {
   method: 'GET', // or your required method
   headers: {
     "ngrok-skip-browser-warning": "true",
