@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { Camera, Pencil, ChevronDown, Loader2, AlertCircle } from 'lucide-react';
-import { apiFetch } from "@/app/lib/api";
 
 // Define the Enum as requested
 export enum AssociationRole {
@@ -36,8 +35,9 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/me`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/me`, {
           method: 'GET',
+          credentials: 'include', 
         });
 
         if (response.ok) {
@@ -143,9 +143,10 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
         data.append('profileImage', selectedFile);
       }
 
-      const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/updateprofile`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/updateprofile`, {
         method: 'PUT',
         body: data,
+        credentials: 'include',
       });
 
       const result = await response.json();

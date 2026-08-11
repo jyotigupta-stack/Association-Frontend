@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, Loader2, CheckCircle2, AlertCircle, Save } from 'lucide-react';
-import { apiFetch } from "@/app/lib/api";
 
 // --- Sub-components ---
 
@@ -83,8 +82,9 @@ export const AnalyticsPage: React.FC = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/association/settings`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/association/settings`, {
           method: 'GET',
+          credentials: 'include',
         });
         if (response.ok) {
           const data = await response.json();
@@ -126,10 +126,11 @@ export const AnalyticsPage: React.FC = () => {
     setSaveSuccess(false);
 
     try {
-      const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/association/settings`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/association/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
+        credentials: 'include',
       });
 
       if (response.ok) {

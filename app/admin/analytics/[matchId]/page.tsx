@@ -742,7 +742,6 @@ import {
   DrawingUtils,
 } from "@mediapipe/tasks-vision";
 import Stats from "../stats";
-import { apiFetch } from "@/app/lib/api";
 
 type ViewOption = "FRONT" | "SIDE" | "BATSMAN" | "BOWLER" | "STUMP" | "ARIEL";
 
@@ -797,10 +796,10 @@ const CricketAnalyticsPage: React.FC = () => {
       if (!matchId) return;
       setLoading(true);
       try {
-        const mRes = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/${matchId}`, {});
+        const mRes = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/${matchId}`, { credentials: 'include' });
         if (mRes.ok) setMatchData(await mRes.json());
 
-        const sRes = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/${matchId}/sync-view?withDownloadUrls=true`, {});
+        const sRes = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/${matchId}/sync-view?withDownloadUrls=true`, { credentials: 'include' });
         if (sRes.ok) {
           const data = await sRes.json();
           console.log("Sync-View Data:", data);

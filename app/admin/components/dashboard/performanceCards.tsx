@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { apiFetch } from "@/app/lib/api";
 
 // Define the shape of our API response
 interface DashboardStats {
@@ -25,8 +24,9 @@ export default function PerformanceCards() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/analytics/dashboard-stats`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/analytics/dashboard-stats`, {
           method: 'GET',
+          credentials: 'include', 
         });
 
         if (response.ok) {

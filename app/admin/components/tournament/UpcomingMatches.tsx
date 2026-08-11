@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { apiFetch } from "@/app/lib/api";
 
 interface Match {
   id: string; // UUID
@@ -37,8 +36,9 @@ const UpcomingMatches = ({ tournamentId, selectedMatchId, onSelectMatch }: Props
       
       setLoading(true);
       try {
-        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/tournament/${tournamentId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/tournament/${tournamentId}`, {
           method: 'GET',
+          credentials: 'include',
         });
         
         const data = await response.json();

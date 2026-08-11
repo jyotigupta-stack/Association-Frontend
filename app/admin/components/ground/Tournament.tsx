@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { apiFetch } from "@/app/lib/api";
 
 //  Interface matching your TypeORM Entity
 interface Tournament {
@@ -124,7 +123,8 @@ const TournamentList: React.FC<TournamentListProps> = ({ groundId, selectedId, o
 
       setLoading(true);
       try {
-        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/tournaments/ground/${groundId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/tournaments/ground/${groundId}`, {
+          credentials: 'include',
           method: 'GET'
         });
 

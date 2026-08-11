@@ -6,7 +6,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { apiFetch } from "@/app/lib/api";
 
 interface Match {
   id: string;     
@@ -22,8 +21,9 @@ export default function LiveMatches() {
   useEffect(() => {
     const fetchActiveMatches = async () => {
       try {
-        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/active-matches`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/active-matches`, {
           method: 'GET',
+          credentials: 'include', 
           headers: {
             'Content-Type': 'application/json',
           }
