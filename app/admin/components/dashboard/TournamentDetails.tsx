@@ -1,7 +1,6 @@
  "use client";
 
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/app/lib/api";
 
 interface Tournament {
   id: string;
@@ -17,9 +16,10 @@ export default function TournamentDetails() {
   useEffect(() => {
     const fetchTournaments = async () => {
       try {
-        const response = await apiFetch(
+        const response = await fetch(
           `${process.env.NEXT_PUBLIC_Backend_URL}/tournaments/all`,
           {
+            credentials: "include",
           }
         );
         if (response.ok) {

@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
-import { apiFetch } from "@/app/lib/api";
 
 interface MatchEntity {
   id: string;
@@ -27,9 +26,10 @@ const MatchOverview: React.FC<MatchOverviewProps> = ({ matchId }) => {
       if (!matchId) return;
       setLoading(true);
       try {
-        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/${matchId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/${matchId}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
         });
         if (response.ok) {
           const data = await response.json();

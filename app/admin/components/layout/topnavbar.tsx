@@ -5,7 +5,6 @@ import { Search, Bell, ChevronDown, LogOut,  Settings, Menu, X, Trophy, MapPin, 
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Notifications from './Notification';
-import { apiFetch } from "@/app/lib/api";
 
 // Define User Interface based on your backend
 interface UserData {
@@ -29,8 +28,9 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/me`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/me`, {
           method: 'GET',
+          credentials: 'include',
         });
         if (response.ok) {
           const data = await response.json();
@@ -62,13 +62,19 @@ const Navbar: React.FC = () => {
 
   const handleLogout = async () => {
   try {
-    const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/auth/logout`, {
+    // 1. Call the backend to clear the cookie
+    const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/auth/logout`, {
       method: 'POST',
+      credentials: 'include', // Important to ensure the cookie is sent to be cleared
     });
 
     if (response.ok) {
-      localStorage.removeItem('token');
-      window.location.href = '/';
+      // 2. Clear any local storage if you used it
+      localStorage.removeItem('token'); 
+      
+
+      // 4. Redirect to login page
+      window.location.href = '/'; 
     } else {
       console.error("Logout failed on server");
     }

@@ -104,6 +104,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         `${process.env.NEXT_PUBLIC_Backend_URL}/auth/login`,
         {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type":
               "application/json",
@@ -155,8 +156,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         return;
 
       }
-
-      localStorage.setItem("token", data.token);
 
       const isNewUser =
         !data.user.name;
@@ -335,6 +334,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         `${process.env.NEXT_PUBLIC_Backend_URL}/auth/google-login`,
         {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type":
               "application/json",
@@ -357,8 +357,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         return;
 
       }
-
-      localStorage.setItem("token", data.token);
 
       const isNewUser =
         !data.user.phone;
