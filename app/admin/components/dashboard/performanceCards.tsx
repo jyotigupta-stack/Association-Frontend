@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
+import { apiFetch } from "@/app/lib/api";
 
 // Define the shape of our API response
 interface DashboardStats {
@@ -25,13 +26,11 @@ export default function PerformanceCards() {
     const fetchStats = async () => {
       try {
         // 1. Fetch your existing dashboard stats
-        const statsRes = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/analytics/dashboard-stats`, {
-          credentials: 'include',
+        const statsRes = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/analytics/dashboard-stats`, {
         });
 
         // 2. Fetch the specific user's analyzed video count
-        const videoRes = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/upload/analytics/my-completed-count`, {
-          credentials: 'include',
+        const videoRes = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/upload/analytics/my-completed-count`, {
         });
 
         const statsData = statsRes.ok ? await statsRes.json() : {};

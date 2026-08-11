@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { MoveRight, Loader2, CheckCircle2, Save } from 'lucide-react';
+import { apiFetch } from "@/app/lib/api";
 
 // Adjusted interface to match your Backend Entity Columns
 interface NotificationSettings {
@@ -93,9 +94,8 @@ export const NotificationSettingPage: React.FC = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/association/settings`, {
+        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/association/settings`, {
           method: 'GET',
-          credentials: 'include',
         });
         if (response.ok) {
           const data = await response.json();
@@ -122,11 +122,10 @@ export const NotificationSettingPage: React.FC = () => {
     setSaving(true);
     setSaveSuccess(false);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/association/settings`, {
+      const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/association/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
-        credentials: 'include',
       });
 
       if (response.ok) {

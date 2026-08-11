@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, PlusSquare, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { apiFetch } from "@/app/lib/api";
 
 interface Ground {
   id: string;
@@ -59,9 +60,8 @@ export default function CricketGround({ selectedGroundId }: CricketGroundProps) 
 
   const fetchGrounds = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/ground/my-grounds`, {
+      const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/ground/my-grounds`, {
         method: 'GET',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -84,9 +84,8 @@ export default function CricketGround({ selectedGroundId }: CricketGroundProps) 
     e.preventDefault();
     if (!validateForm()) return;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/ground`, {
+      const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/ground`, {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });

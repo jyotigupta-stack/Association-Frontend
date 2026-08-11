@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { apiFetch } from "@/app/lib/api";
 
 interface Ground {
   id: string;
@@ -73,9 +74,8 @@ const EditGroundModal = ({
   useEffect(() => {
     const fetchGround = async () => {
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `${process.env.NEXT_PUBLIC_Backend_URL}/ground/${groundId}`,
-          { credentials: "include" },
         );
         if (res.ok) {
           const data = await res.json();
@@ -101,13 +101,12 @@ const EditGroundModal = ({
 
     setSaving(true);
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${process.env.NEXT_PUBLIC_Backend_URL}/ground/update/${groundId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
-          credentials: "include",
         },
       );
       if (res.ok) {
@@ -305,11 +304,10 @@ export const GroundPage: React.FC = () => {
   const fetchGrounds = async () => {
     setLoading(true);
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${process.env.NEXT_PUBLIC_Backend_URL}/ground/my-grounds`,
         {
           method: "GET",
-          credentials: "include",
           headers: { "Content-Type": "application/json" },
         },
       );
@@ -330,11 +328,10 @@ export const GroundPage: React.FC = () => {
   const handleDelete = async () => {
     if (!selectedGround) return;
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${process.env.NEXT_PUBLIC_Backend_URL}/ground/delete/${selectedGround}`,
         {
           method: "DELETE",
-          credentials: "include",
         },
       );
       if (res.ok) {

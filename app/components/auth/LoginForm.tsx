@@ -262,7 +262,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       setLoading(true);
       const res = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/auth/login`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, userType: "ASSOCIATION" }),
       });
@@ -275,11 +274,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         return;
       }
 
+      localStorage.setItem("token", data.token);
+
       if (rememberMe) localStorage.setItem("rememberedEmail", email);
       else localStorage.removeItem("rememberedEmail");
 
       // Pass user object to handle routing in parent
-      onSuccess(data.user, email, false); 
+      onSuccess(data.user, email, false);
     } catch {
       alert("Login failed");
     } finally {
@@ -378,7 +379,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               try {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/auth/google-login`, {
                   method: "POST",
-                  credentials: "include",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
                     idToken: credentialResponse.credential,
@@ -387,6 +387,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 });
                 const data = await res.json();
                 if (res.ok) {
+                    localStorage.setItem("token", data.token);
                     // Pass user data to handle routing
                     onSuccess(data.user, data.user.email, true);
                 }

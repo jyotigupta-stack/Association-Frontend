@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation"; 
 import Navbar from "../admin/components/layout/topnavbar";
 import { Loader2 } from "lucide-react";
+import { apiFetch } from "@/app/lib/api";
 
 export default function AdminDashboardLayout({
   children,
@@ -16,9 +17,8 @@ export default function AdminDashboardLayout({
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/me`, {
+        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/me`, {
           method: "GET",
-          credentials: "include", 
         });
 
         if (response.ok) {

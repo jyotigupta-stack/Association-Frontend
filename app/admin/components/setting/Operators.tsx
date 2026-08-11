@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Pencil, Trash2, X, AlertCircle, UserCog, ChevronLeft, ChevronRight } from 'lucide-react';
+import { apiFetch } from "@/app/lib/api";
 
 interface Operator {
   id: string;
@@ -27,7 +28,7 @@ export const Operators = () => {
 
   const fetchOperators = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/operators`, { credentials: "include" });
+      const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/operators`, {});
       const result = await response.json();
       if (result.success) setOperators(result.data);
     } catch (err) {
@@ -78,11 +79,10 @@ export const Operators = () => {
   const handleUpdate = async () => {
     if (!selectedOperator || !validateForm()) return;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/operators/${selectedOperator.id}`, {
+      const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/operators/${selectedOperator.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
-        credentials: 'include'
       });
       if (response.ok) {
         fetchOperators();
@@ -96,9 +96,8 @@ export const Operators = () => {
   const handleDelete = async () => {
     if (!selectedOperator) return;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/operators/${selectedOperator.id}`, {
+      const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/user/operators/${selectedOperator.id}`, {
         method: 'DELETE',
-        credentials: 'include'
       });
       if (response.ok) {
         fetchOperators();
