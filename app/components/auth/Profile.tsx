@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Camera, Pencil, ChevronDown, Loader2, AlertCircle } from 'lucide-react';
 import { apiFetch } from "@/app/lib/api";
+import { Camera, Pencil, ChevronDown, Loader2, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
+import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 // Define the Enum as requested
 export enum AssociationRole {
@@ -32,6 +34,20 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // --- Toast Logic ---
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+    show: false,
+    message: '',
+    type: 'success'
+  });
+
+  const triggerToast = (message: string, type: 'success' | 'error') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast((prev) => ({ ...prev, show: false }));
+    }, 3000);
+  };
+
   // 1. Fetch current data on mount
   useEffect(() => {
     const fetchUserData = async () => {
@@ -42,12 +58,14 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
 
         if (response.ok) {
           const res = await response.json();
-          console.log("Fethed",res);
+          let phone = res.phone || "";
+          if (phone && !phone.startsWith('+')) phone = `+91${phone}`;
+          console.log("Fetched", res);
           setFormData({
             name: res.name || '',
             role: res.associationRole || '',
             association: res.associationSettings?.cricketAssociationName || '',
-            mobile: res.phone || '',
+            mobile: phone,
             email: res.email || '',
             groundsManaged: res.associationSettings?.numberOfGroundManaged || 0
           });
@@ -88,10 +106,8 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
       newErrors.email = "Invalid format";
     }
 
-    if (!formData.mobile.trim()) {
-      newErrors.mobile = "Mobile is required";
-    } else if (!phoneRegex.test(formData.mobile)) {
-      newErrors.mobile = "Must be 10 digits";
+   if (!formData.mobile || !isValidPhoneNumber(formData.mobile)) {
+      newErrors.mobile = "Invalid mobile number";
     }
 
     if (formData.association && !alphaRegex.test(formData.association)) {
@@ -105,14 +121,12 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
 
-    // Strict numeric enforcement
     if (name === "mobile" || name === "groundsManaged") {
         if (value !== "" && !/^\d+$/.test(value)) return;
         if (name === "mobile" && value.length > 10) return;
     }
 
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user types
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
   };
 
@@ -127,7 +141,10 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
   // 3. Submit Update
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm()) {
+        triggerToast("Please correct the errors in the form.", "error");
+        return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -151,14 +168,15 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
       const result = await response.json();
 
       if (result.success) {
-        alert("Profile updated successfully!");
-        onComplete();
+        triggerToast("Profile updated successfully!", "success");
+        // Wait for user to see the success message before calling onComplete
+        setTimeout(() => onComplete(), 1500);
       } else {
-        alert("Update failed: " + result.message);
+        triggerToast(result.message || "Update failed", "error");
       }
     } catch (error) {
       console.error("Submit error:", error);
-      alert("An error occurred while updating.");
+      triggerToast("A network error occurred. Please try again.", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -167,7 +185,20 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
   if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin" /></div>;
 
   return (
-    <div className="w-full max-w-md bg-[#F6F8FA] rounded-xl shadow-lg border border-gray-300 ">
+    <div className="w-full max-w-md bg-[#F6F8FA] rounded-xl shadow-lg border border-gray-300 relative">
+      
+      {/* --- Notification Toast --- */}
+      {toast.show && (
+        <div className={`absolute -top-16 left-0 right-0 flex justify-center animate-in fade-in slide-in-from-top-2 duration-300 z-50`}>
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-xl border ${
+            toast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'
+          }`}>
+            {toast.type === 'success' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+            <span className="text-xs font-bold">{toast.message}</span>
+          </div>
+        </div>
+      )}
+
       <div className="w-full bg-white rounded-xl p-6 md:p-8 shadow-lg">
         <div className="text-center mb-6">
           <h1 className="text-xl font-bold text-slate-900 mb-1">Set Up Your Administrator Profile</h1>
@@ -234,13 +265,22 @@ export default function ProfileForm({ onComplete }: ProfileFormProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-500">Mobile No.</label>
-              <input type="tel" name="mobile" value={formData.mobile} onChange={handleChange}
-                placeholder="10 digit number" 
-                className={`text-gray-500 input-style text-xs ${errors.mobile ? 'border-red-500 ring-1 ring-red-500/10' : ''}`} 
-              />
-              {errors.mobile && <p className="text-[10px] text-red-500 flex items-center gap-1"><AlertCircle size={10}/> {errors.mobile}</p>}
-            </div>
+      <label className="text-xs font-medium text-gray-500">Mobile No.</label>
+      <div className={`w-full rounded-xl border bg-white transition-all ${errors.mobile ? 'border-red-500 ring-1 ring-red-500/10' : 'border-slate-200'}`}>
+        <PhoneInput
+          international
+          defaultCountry="IN"
+          value={formData.mobile}
+          onChange={(val) => setFormData(prev => ({ ...prev, mobile: val || "" }))}
+          className="text-xs text-gray-600 px-3 py-2.5 outline-none"
+        />
+      </div>
+      {errors.mobile && (
+        <p className="text-[10px] text-red-500 flex items-center gap-1">
+          <AlertCircle size={10}/> {errors.mobile}
+        </p>
+      )}
+    </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-500">Email</label>
               <input type="email" name="email" value={formData.email} onChange={handleChange}

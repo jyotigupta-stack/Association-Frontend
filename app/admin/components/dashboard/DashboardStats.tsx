@@ -96,24 +96,6 @@ const GroundDetails = () => {
                   </div>
           </div>
 
-          <div className="pt-2 relative z-10">
-            <p className="text-[13px] text-slate-500 mb-2">Primary Pitch Type</p>
-            <div className="flex items-center gap-2">
-              <div className="w-3.5 h-3.5 rounded-full bg-[#9481FF]"></div>
-              <span className="text-sm font-bold text-slate-700">{g.pitch}</span>
-            </div>
-          </div>
-        </div>
-      ))}
-      
-      {!loading && grounds.length === 0 && (
-        <div className="w-full py-10 text-center text-slate-400 font-medium">
-          No ground details available.
-        </div>
-      )}
-    </div>
-  );
-};
 //  Define the allowed roles as a Union Type
 type PlayerRole = 'Batsman' | 'Bowler';
 
@@ -230,16 +212,45 @@ const Analytics: React.FC<AnalyticsProps> = ({ activeRole }) =>{
 export default function DashboardStats() {
   const [activeTab, setActiveTab] = useState('Player Stats');
   const [activeRole, setActiveRole] = useState<PlayerRole>('Batsman');
-  const tabs = ['Player Stats', 'Ground Details', 'Analytics'];
-  
-  
-  const players = Array(8).fill({ 
-    name: "Virat Kohli", 
-    role: "Batter", 
-    score: "4000 / 12", 
-    growth: "+1.2%", 
-    rate: "148.5" 
-  });
+  const [statsData, setStatsData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const tabs = ['Player Stats', 'Analytics'];
+
+  // Fetch data using native fetch
+  useEffect(() => {
+    if (activeTab === 'Player Stats') {
+      const fetchData = async () => {
+        setLoading(true);
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_SCORING_API_URL}/api/v1/statistics/leaders`, {
+  method: 'GET', // or your required method
+  headers: {
+    "ngrok-skip-browser-warning": "true",
+    "Content-Type": "application/json" // Include if your API requires it
+  }
+});
+          const data = await response.json();
+          console.log("Fetched stats data:", data);
+          // Merge run scorers and wicket takers into one list
+          const combined = [
+            ...(data.top_run_scorers || []),
+            ...(data.top_wicket_takers || [])
+          ];
+          setStatsData(combined);
+        } catch (error) {
+          console.error("Failed to fetch stats:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchData();
+    }
+  }, [activeTab]);
+
+  // Filter logic
+  const filteredPlayers = statsData.filter(p => 
+    activeRole === 'Batsman' ? p.player_type === 'batsman' : p.player_type === 'bowler'
+  );
 
   return (
     <div className="bg-white p-4 md:p-3 rounded-[24px] border border-slate-100 shadow-sm flex-grow w-full overflow-hidden">
@@ -250,94 +261,79 @@ export default function DashboardStats() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`text-xs md:text-sm font-bold px-4 py-2.5 rounded-xl transition-all ${
-                activeTab === tab 
-                ? 'bg-white text-slate-700 shadow-sm' 
-                : 'text-slate-400 hover:text-slate-600'
+                activeTab === tab ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'
               }`}
             >
               {tab}
             </button>
           ))}
         </div>
-        {/* Role Toggle: Only visible when Analytics is selected */}
-        {activeTab === 'Analytics' && (
-          <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100 w-full sm:w-auto">
-            <button 
-              onClick={() => setActiveRole('Batsman')}
-              className={`flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium transition-all rounded-lg ${
-                activeRole === 'Batsman' 
-                ? 'bg-white shadow-sm text-slate-700 border border-slate-100' 
-                : 'text-slate-400'
-              }`}
-            >
-              Batsman
-            </button>
-            <button 
-              onClick={() => setActiveRole('Bowler')}
-              className={`flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium transition-all rounded-lg ${
-                activeRole === 'Bowler' 
-                ? 'bg-white shadow-sm text-slate-700 border border-slate-100' 
-                : 'text-slate-400'
-              }`}
-            >
-              Bowler
-            </button>
-          </div>
-        )}
+
+        {/* Unified Role Toggle for both tabs */}
+        <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100 w-full sm:w-auto">
+          <button 
+            onClick={() => setActiveRole('Batsman')}
+            className={`flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium transition-all rounded-lg ${activeRole === 'Batsman' ? 'bg-white shadow-sm text-slate-700 border border-slate-100' : 'text-slate-400'}`}
+          >Batsman</button>
+          <button 
+            onClick={() => setActiveRole('Bowler')}
+            className={`flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium transition-all rounded-lg ${activeRole === 'Bowler' ? 'bg-white shadow-sm text-slate-700 border border-slate-100' : 'text-slate-400'}`}
+          >Bowler</button>
+        </div>
       </div>
 
       <div className="mt-1">
         {activeTab === 'Player Stats' && (
-          /* Fixed height container: roughly 5 rows (5 * 64px) + header */
           <div className="w-full overflow-x-auto scrollbar-hide max-h-[250px] overflow-y-auto">
-            <table className="w-full text-left border-collapse min-w-[600px]">
-              <thead className="sticky top-0 bg-white z-10">
-                <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
-                  <th className="pb-3 px-4 font-medium">Players</th>
-                  <th className="pb-3 font-medium text-center">Runs/Wickets</th>
-                  <th className="pb-3 font-medium text-center">Performance Graph</th>
-                  <th className="pb-3 font-medium text-center">Growth</th>
-                  <th className="pb-3 font-medium text-center">Strike Rate/Economy</th>
-                </tr>
-              </thead>
-              <tbody>
-                {players.map((p, i) => (
-                  <tr key={i} className={`transition-colors ${i % 2 === 0 ? 'bg-[#F8FAFC]' : 'bg-white'} hover:bg-slate-100/50`}>
-                    <td className="py-2 px-4 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + 5}`} alt="avatar" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-900 truncate">{p.name}</p>
-                        <p className="text-[10px] text-slate-500 font-medium">{p.role}</p>
-                      </div>
-                    </td>
-                    <td className="py-4 text-xs font-bold text-gray-900 text-center">{p.score}</td>
-                    <td className="py-4">
-                      <div className="w-24 h-6 mx-auto overflow-hidden">
-                        <svg viewBox="0 0 100 30" className="w-full h-full">
-                          <path 
-                            d={i % 2 === 0 ? "M0,20 L20,15 L40,25 L60,10 L80,18 L100,5" : "M0,10 L20,25 L40,15 L60,20 L80,5 L100,12"} 
-                            fill="none" 
-                            stroke={p.growth.startsWith('+') ? "#10b981" : "#ef4444"} 
-                            strokeWidth="2.5" 
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      </div>
-                    </td>
-                    <td className={`py-4 text-xs font-bold text-center ${p.growth.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
-                      {p.growth}
-                    </td>
-                    <td className="py-4 text-sm font-bold text-slate-400 text-center">{p.rate}</td>
+            {loading ? <p className="text-center p-4 text-sm text-slate-400">Loading...</p> : (
+              <table className="w-full text-left border-collapse min-w-[600px]">
+                <thead className="sticky top-0 bg-white z-10 ">
+                  <tr className="text-[11px]  uppercase tracking-wider font-bold text-black">
+                    <th className="pb-3 px-4 font-bold">Players</th>
+                    <th className="pb-3 font-bold text-center">{activeRole === 'Batsman' ? 'Runs' : 'Wickets'}</th>
+                    <th className="pb-3 font-bold text-center">Performance</th>
+                    <th className="pb-3 font-bold text-center">Growth</th>
+                    <th className="pb-3 font-bold text-center">{activeRole === 'Batsman' ? 'Strike Rate' : 'Economy'}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredPlayers.map((p, i) => (
+                    <tr key={i} className="hover:bg-slate-50 border-b border-slate-50">
+                      <td className="py-2 px-4 flex items-center gap-3">
+                        
+                        <div>
+                          <p className="text-xs font-bold text-slate-900">{p.player_name}</p>
+                          <p className="text-[12px] text-slate-500">{activeRole}</p>
+                        </div>
+                      </td>
+                      <td className="py-4 text-xs font-bold text-gray-700 text-center">{activeRole === 'Batsman' ? p.total_runs : p.total_wickets}</td>
+                      <td className="py-4">
+  <div className="w-20 h-6 mx-auto">
+    <svg viewBox="0 0 100 30" className="w-full h-full">
+      {/* Check if the string starts with a '+' */}
+      <path 
+        d="M0,20 L50,5 L100,25" 
+        fill="none" 
+        stroke={p.growth.startsWith('+') ? "#10b981" : "#ef4444"} 
+        strokeWidth="3" 
+      />
+    </svg>
+  </div>
+</td>
+<td className={`py-4 text-xs font-bold text-center ${p.growth.startsWith('+') ? "text-green-500" : "text-red-500"}`}>
+  {p.growth}
+</td>
+                      <td className="py-4 text-sm font-bold text-slate-400 text-center">
+                        {activeRole === 'Batsman' ? p.strike_rate : p.economy}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         )}
-
-        {activeTab === 'Ground Details' && <GroundDetails />}
+        
         {activeTab === 'Analytics' && <Analytics activeRole={activeRole} />}
       </div>
     </div>

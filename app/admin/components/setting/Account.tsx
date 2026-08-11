@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { LocateFixed, PenLine, Loader2, Save, AlertCircle, ChevronDown } from 'lucide-react';
 import { apiFetch } from "@/app/lib/api";
+import { LocateFixed,CheckCircle2, PenLine, Loader2, Save, AlertCircle, ChevronDown } from 'lucide-react';
+import PhoneInput,{ isValidPhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 // --- Types ---
 
@@ -77,6 +79,22 @@ const InputField: React.FC<InputFieldProps> = ({
   </div>
 );
 
+
+const PhoneInputField = ({ label, value, onChange, error }: { label: string, value: string, onChange: (val: string | undefined) => void, error?: string }) => (
+  <div className="flex flex-col gap-2 flex-1">
+    <label className="text-xs font-medium text-gray-500">{label}</label>
+    <div className={`relative flex flex-col w-full border rounded-lg bg-gray-50 ${error ? 'border-red-500' : 'border-gray-200'} focus-within:border-black transition-all`}>
+      <PhoneInput
+        international
+        defaultCountry="IN"
+        value={value}
+        onChange={onChange}
+        className="p-3 text-sm text-gray-700 outline-none"
+      />
+    </div>
+    {error && <span className="text-[10px] text-red-500 font-medium mt-1 flex items-center gap-1"><AlertCircle size={10} /> {error}</span>}
+  </div>
+);
 // --- Main Component ---
 
 export const AccountPage: React.FC = () => {
@@ -85,6 +103,9 @@ export const AccountPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [profilePreview, setProfilePreview] = useState<string>("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+    
   
   const [formData, setFormData] = useState({
     name: "",
@@ -107,10 +128,15 @@ export const AccountPage: React.FC = () => {
 
         if (response.ok) {
           const data = await response.json();
+
+          let formattedPhone = data.phone || "";
+        if (formattedPhone && !formattedPhone.startsWith('+')) {
+            formattedPhone = `+91${formattedPhone}`; 
+        }
           setFormData({
             name: data.name || "",
             email: data.email || "",
-            phone: data.phone || "",
+            phone: formattedPhone,
             associationRole: data.associationRole || "admin",
             cricketAssociationName: data.associationSettings?.cricketAssociationName || "",
             numberOfGroundManaged: data.associationSettings?.numberOfGroundManaged?.toString() || "0",
@@ -154,11 +180,9 @@ export const AccountPage: React.FC = () => {
       newErrors.email = "Invalid email format";
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (!phoneRegex.test(formData.phone)) {
-      newErrors.phone = "Must be a 10-digit number";
-    }
+    if (formData.phone && !isValidPhoneNumber(formData.phone)) {
+    newErrors.phone = "Invalid phone number for selected country";
+  }
 
     if (formData.cricketAssociationName && !alphaRegex.test(formData.cricketAssociationName)) {
       newErrors.cricketAssociationName = "Association name should be alphabetic";
@@ -198,7 +222,7 @@ export const AccountPage: React.FC = () => {
   const handleSaveChanges = async () => {
     if (!validateForm()) return;
 
-    setUpdating(true);
+    setSaving(true);
     try {
       const data = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
@@ -216,14 +240,16 @@ export const AccountPage: React.FC = () => {
 
       const resJson = await response.json();
       if (response.ok) {
-        alert("Profile updated successfully!");
+        setSaveSuccess(true);
+        setErrors({}); // Clear errors on success
+        setTimeout(() => setSaveSuccess(false), 3000);
       } else {
         alert("Update failed: " + resJson.message);
       }
     } catch (error) {
-      console.error("Update error:", error);
+      console.error("Failed to save settings:", error);
     } finally {
-      setUpdating(false);
+      setSaving(false);
     }
   };
 
@@ -237,14 +263,21 @@ export const AccountPage: React.FC = () => {
           <h2 className="text-xl font-bold text-gray-900">Accounts</h2>
           <p className="text-xs text-gray-500">Manage your personal Info.</p>
         </div>
-        <button 
-          onClick={handleSaveChanges}
-          disabled={updating}
-          className="bg-[#0D0D12] text-white px-2 md:px-5 py-2.5 rounded-lg md:text-sm text-xs font-semibold hover:bg-black transition-all flex items-center gap-2 disabled:opacity-70"
-        >
-          {updating ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-          Save Changes
-        </button>
+        <div className="flex items-center gap-3">
+          {saveSuccess && (
+            <span className="text-green-600 text-xs font-medium flex items-center gap-1 animate-in fade-in slide-in-from-right-2">
+              <CheckCircle2 size={14} /> Saved Successfully
+            </span>
+          )}
+          <button 
+            onClick={handleSaveChanges}
+            disabled={saving}
+            className="bg-[#0D0D12] text-white px-1 md:px-5 py-1 md:py-2.5 rounded-lg text-xs md:text-sm font-semibold hover:bg-black transition-all flex items-center gap-2 disabled:opacity-70 active:scale-95"
+          >
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={18} />}
+            Save Changes
+          </button>
+        </div>
       </div>
 
       {/* Profile Header with Image Logic */}
@@ -270,13 +303,20 @@ export const AccountPage: React.FC = () => {
 
       <div className="space-y-8 max-w-3xl">
         {/* Personal Details */}
-        <section>
+       <section>
           <h5 className="text-[13px] font-bold text-black mb-4 uppercase tracking-[0.1em]">Personal Details</h5>
           <div className="flex flex-col gap-4">
             <InputField label="Registered name" name="name" value={formData.name} onChange={handleChange} error={errors.name} />
             <div className="flex flex-col md:flex-row gap-4">
               <InputField label="Primary email" name="email" value={formData.email} onChange={handleChange} error={errors.email} />
-              <InputField label="Phone number" name="phone" value={formData.phone} onChange={handleChange} placeholder="10 digit number" error={errors.phone} />
+              
+              {/* Using the new Phone Component */}
+              <PhoneInputField 
+  label="Phone number" 
+  value={formData.phone} 
+  onChange={(val) => setFormData(prev => ({ ...prev, phone: val || "" }))} 
+  error={errors.phone} 
+/>
             </div>
           </div>
         </section>

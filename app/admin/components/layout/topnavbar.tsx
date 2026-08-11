@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Notifications from './Notification';
 import { apiFetch } from "@/app/lib/api";
+import { io, Socket } from 'socket.io-client';
 
 // Define User Interface based on your backend
 interface UserData {
@@ -25,6 +26,9 @@ const Navbar: React.FC = () => {
   const notificationRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
+  const [notifications, setNotifications] = useState<any[]>([]);
+const [unreadCount, setUnreadCount] = useState(0);
+const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -34,6 +38,7 @@ const Navbar: React.FC = () => {
         });
         if (response.ok) {
           const data = await response.json();
+          console.log("Fetched user data:", data);
           setUser(data);
         }
       } catch (error) {
@@ -42,6 +47,52 @@ const Navbar: React.FC = () => {
     };
     fetchUser();
   }, []);
+
+  useEffect(() => {
+  if (!user) return; 
+
+  
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/notifications`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        console.log("Fetched notifications:", data);
+        setNotifications(data.notifications);
+        setUnreadCount(data.unreadCount);
+      }
+    } catch (err) {
+      console.error("Failed to fetch notifications", err);
+    }
+  };
+
+  fetchNotifications();
+
+  
+  socketRef.current = io(process.env.NEXT_PUBLIC_Backend_URL || "http://localhost:5701");
+  
+  socketRef.current.emit("join", (user as any).id);
+
+  socketRef.current.on("new_notification", (newNote) => {
+    setNotifications((prev) => [newNote, ...prev]);
+    setUnreadCount((prev) => prev + 1);
+  });
+
+  return () => {
+    socketRef.current?.disconnect();
+  };
+}, [user]);
+
+// Function to handle reading
+const handleMarkAllRead = async () => {
+  await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/notifications/mark-all-read`, {
+    method: 'PUT',
+    credentials: 'include'
+  });
+  setUnreadCount(0);
+};
   // Close dropdown or search modal on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -83,9 +134,9 @@ const Navbar: React.FC = () => {
     { name: "Grounds", path: "/admin/ground" },
 
   ];
-//const profilePic = `https://api.dicebear.com/7.x/initials/svg?seed=${user?.name || 'User'}`
+
   const profilePic = user?.profileImage || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.name || 'User'}`;
-  //console.log("profilePic",profilePic);
+  
 
   return (
     <>
@@ -99,7 +150,7 @@ const Navbar: React.FC = () => {
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
             
-            <Link href="/home" className="flex items-center gap-2">
+            <Link href="/admin/dashboard" className="flex items-center gap-2">
               <div className="w-10 h-10 flex items-center justify-center">
                 <img src="/Logo.png" alt="Khel.ai Logo" className="w-full h-full object-contain" />
               </div>
@@ -108,38 +159,62 @@ const Navbar: React.FC = () => {
           </div>
 
           <div className="hidden lg:flex items-center gap-8 h-full">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.path;
-              return (
-                <Link key={link.name} href={link.path} className="relative h-full flex items-center group">
-                  <span className={`text-sm transition-colors ${isActive ? 'text-[#0D0D12] font-semibold' : 'text-gray-400 font-medium group-hover:text-gray-600'}`}>
-                    {link.name}
-                  </span>
-                  {isActive && <div className="absolute bottom-0 left-0 right-0 h-1 bg-black rounded-t-full" />}
-                </Link>
-              );
-            })}
-          </div>
+  {navLinks.map((link) => {
+    
+    const isActive = link.path === "/admin/dashboard" 
+      ? pathname === link.path 
+      : pathname.startsWith(link.path);
+
+    return (
+      <Link key={link.name} href={link.path} className="relative h-full flex items-center group">
+        <span className={`text-sm transition-colors ${
+          isActive 
+            ? 'text-[#0D0D12] font-semibold' 
+            : 'text-gray-700 font-medium group-hover:text-gray-600'
+        }`}>
+          {link.name}
+        </span>
+        {isActive && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black rounded-t-full" />
+        )}
+      </Link>
+    );
+  })}
+</div>
 
           <div className="flex items-center md:gap-4 gap-1">
             {/* Search Icon Button replaces the Input */}
-            <button 
+            {/* <button 
               onClick={() => setIsSearchOpen(true)}
               className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-xs"
             >
               <Search size={18} className="text-gray-600" />
-            </button>
+            </button> */}
 
             {/* Bell Icon Trigger */}
-<div className="" ref={notificationRef}>
-  <button className='p-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors relative shadow-xs' onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}>
-     <Bell size={18} className="text-gray-600"/>
+<div className="relative" ref={notificationRef}>
+  <button 
+    className='p-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors relative shadow-xs' 
+    onClick={() => {
+      setIsNotificationsOpen(!isNotificationsOpen);
+      if (!isNotificationsOpen && unreadCount > 0) handleMarkAllRead();
+    }}
+  >
+    <Bell size={18} className="text-gray-600"/>
+    {unreadCount > 0 && (
+      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
+        {unreadCount}
+      </span>
+    )}
   </button>
 
-  {/* Dropdown Positioning */}
   {isNotificationsOpen && (
-    <div className="absolute right-0 mt-4 z-[100]">
-      <Notifications onClose={() => setIsNotificationsOpen(false)} />
+    <div className="absolute right-0 mt-3 w-[400px] bg-white rounded-[32px] shadow-2xl border border-gray-100 overflow-hidden z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+      {/* Pass the data directly */}
+      <Notifications 
+        notifications={notifications} 
+        onClose={() => setIsNotificationsOpen(false)} 
+      />
     </div>
   )}
 </div>
@@ -157,7 +232,7 @@ const Navbar: React.FC = () => {
                 </div>
                 <div className="hidden sm:block text-left">
                     <p className="text-sm font-bold text-[#0D0D12] leading-tight">{user?.name || 'Loading...'}</p>
-                    <p className="text-[11px] text-gray-400 truncate max-w-[120px]">{user?.email || 'Please wait'}</p>
+                    <p className="text-[11px] text-gray-700 truncate max-w-[120px]">{user?.email || 'Please wait'}</p>
                 </div>
                 <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
               </div>
@@ -201,23 +276,27 @@ const Navbar: React.FC = () => {
 
             {/* Navigation Links */}
             <div className="flex flex-col gap-2">
-              {navLinks.map((link) => {
-                const isActive = pathname === link.path;
-                return (
-                  <Link 
-                    key={link.name} 
-                    href={link.path} 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
-                      isActive 
-                      ? 'bg-gray-900 text-white' 
-                      : 'text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
-                    {link.name}
-                  </Link>
-                );
-              })}
+              {/* Inside Mobile Navigation Links */}
+{navLinks.map((link) => {
+  const isActive = link.path === "/admin/dashboard" 
+    ? pathname === link.path 
+    : pathname.startsWith(link.path);
+
+  return (
+    <Link 
+      key={link.name} 
+      href={link.path} 
+      onClick={() => setIsMobileMenuOpen(false)}
+      className={`px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
+        isActive 
+        ? 'bg-gray-900 text-white' 
+        : 'text-gray-500 hover:bg-gray-50'
+      }`}
+    >
+      {link.name}
+    </Link>
+  );
+})}
             </div>
 
             {/* Bottom Section (User Info) */}

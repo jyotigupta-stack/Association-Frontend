@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, ShieldCheck, Bell, BarChart3,LucideIcon, MoveRight,} from 'lucide-react';
+import { User, ShieldCheck, Bell, BarChart3,LucideIcon, MoveRight,UserRoundCog} from 'lucide-react';
 interface MenuItem {
   id: string;
   icon: LucideIcon | React.ElementType;
@@ -49,6 +49,7 @@ const menuItems: MenuItem[] = [
   { id: 'Association', icon: Association, title: "Association Settings", sub: "Manage Your Association info." },
   { id: 'Notifications', icon: Bell, title: "Notifications", sub: "Push, in-app, email, SMS" },
   { id: 'Grounds', icon: Ground, title: "Grounds Settings", sub: "Staking boundaries" },
+  {id:'Operators', icon: UserRoundCog, title:"Manage Operators", sub:"Add,Edit and Remove Operators"},
   { id: 'Analytics', icon: BarChart3, title: "Analytics Settings", sub: "Theme and layout" },
   { id: 'Privacy', icon: ShieldCheck, title: "Privacy & data", sub: "Visibility and tracking" },
 ];
