@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { apiFetch } from "@/app/lib/api";
 
 interface Match {
   id: string; // UUID
@@ -43,9 +44,8 @@ const UpcomingMatches: React.FC<UpcomingMatchesProps> = ({
       
       setLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/tournament/${tournamentId}`, {
+        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/tournament/${tournamentId}`, {
           method: 'GET',
-          credentials: 'include',
         });
         
         const data = await response.json();

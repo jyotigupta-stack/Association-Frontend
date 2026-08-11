@@ -1,4 +1,5 @@
 import React, { useState,useEffect } from 'react';
+import { apiFetch } from "@/app/lib/api";
 
 
 // Define the interface based on your API and UI usage
@@ -22,10 +23,9 @@ const GroundDetails = () => {
   useEffect(() => {
     const fetchGrounds = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/ground/all`, {
+        const response = await apiFetch(`${process.env.NEXT_PUBLIC_Backend_URL}/ground/all`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
         });
         if (response.ok) {
           const data = await response.json();
