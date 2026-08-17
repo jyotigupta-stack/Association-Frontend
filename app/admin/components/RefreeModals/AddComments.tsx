@@ -1,19 +1,60 @@
 "use client";
 
 import React, { useState } from 'react';
-import { X, User, ShieldAlert, Send } from 'lucide-react';
+import { X, User, ShieldAlert, Send, Loader2 } from 'lucide-react';
 
 /* ─── ADD COMMENT MODAL COMPONENT ─── */
 interface AddCommentModalProps {
   isOpen: boolean;
   onClose: () => void;
   ballInfo: any;
+  matchId: string | number;
+  matchData?: any;
   onConfirm: (comment: string) => void;
 }
 
-export const AddCommentModal: React.FC<AddCommentModalProps> = ({ isOpen, onClose, ballInfo, onConfirm }) => {
+export const AddCommentModal: React.FC<AddCommentModalProps> = ({ isOpen, onClose, ballInfo, matchId, onConfirm ,matchData}) => {
   const [commentText, setCommentText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+const matchDetails = Array.isArray(matchData) ? matchData[0] : matchData;
   if (!isOpen) return null;
+
+  const handleSubmit = async () => {
+    if (!commentText.trim()) return;
+    const ballId = ballInfo?.id;
+    if (!matchId || !ballId) {
+      setError("Missing match or ball ID");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SCORING_API_URL}/api/v1/matches/${matchId}/balls/${ballId}/mr-judgement`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        body: JSON.stringify({ mr_comments: commentText }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update comment");
+      }
+
+      onConfirm(commentText);
+      setCommentText("");
+      onClose();
+    } catch (err) {
+      console.error(err);
+      setError("Failed to save comment. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200">
@@ -30,14 +71,20 @@ export const AddCommentModal: React.FC<AddCommentModalProps> = ({ isOpen, onClos
           <p className="text-[#7384A6] text-xs font-medium">Add Comments so that other Match Officials can see it.</p>
         </div>
 
+        {error && (
+          <div className="mb-4 p-2 bg-red-50 border border-red-100 text-red-600 text-xs rounded-xl text-center">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-4 mb-6">
           <div className="flex items-center gap-2 text-xs font-semibold text-gray-600 px-1">
             <User size={14} className="text-[#FF5521]" />
-            <span>Tushar Pal (Umpire)</span>
+            <span>{matchDetails?.referee} (Refree)</span>
           </div>
 
           <div className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-gray-500 font-medium">
-            Ball Result here is not justified, according to video
+            {ballInfo ? `Ball ${ballInfo.over_number || ballInfo.over} - ${ballInfo.batsman_name} vs ${ballInfo.bowler_name}` : "Ball Result here is not justified, according to video"}
           </div>
 
           <div className="relative">
@@ -46,32 +93,25 @@ export const AddCommentModal: React.FC<AddCommentModalProps> = ({ isOpen, onClos
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Write Comment Here"
+              disabled={loading}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-12 text-xs font-medium text-gray-800 outline-none focus:border-[#FF5521] transition-colors"
             />
             <button 
-              onClick={() => {
-                if (!commentText.trim()) return;
-                onConfirm(commentText);
-                setCommentText("");
-                onClose();
-              }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6366F1] hover:text-[#4F46E5] transition-colors p-1 cursor-pointer"
+              onClick={handleSubmit}
+              disabled={loading}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6366F1] hover:text-[#4F46E5] transition-colors p-1 cursor-pointer disabled:opacity-50"
             >
-              <Send size={18} />
+              {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             </button>
           </div>
         </div>
 
         <button
-          onClick={() => {
-            if (!commentText.trim()) return;
-            onConfirm(commentText);
-            setCommentText("");
-            onClose();
-          }}
-          className="w-full py-3.5 bg-[#0F1117] hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] cursor-pointer"
+          onClick={handleSubmit}
+          disabled={loading}
+          className="w-full py-3.5 bg-[#0F1117] hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center disabled:opacity-50"
         >
-          Confirm
+          {loading ? <Loader2 size={16} className="animate-spin mr-2" /> : "Confirm"}
         </button>
       </div>
     </div>
@@ -82,17 +122,56 @@ export const AddCommentModal: React.FC<AddCommentModalProps> = ({ isOpen, onClos
 interface MrJudgementModalProps {
   isOpen: boolean;
   onClose: () => void;
+  matchId: string | number;
+  ballId: string | number;
   onConfirm: (judgement: string) => void;
 }
 
 export const MrJudgementModal: React.FC<MrJudgementModalProps> = ({
   isOpen,
   onClose,
+  matchId,
+  ballId,
   onConfirm,
 }) => {
-  const [judgement, setJudgement] = useState<"Correct" | "InCorrect">("Correct");
+  const [judgement, setJudgement] = useState<"Correct" | "Incorrect">("Correct");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   if (!isOpen) return null;
+
+  const handleSubmit = async () => {
+    if (!matchId || !ballId) {
+      setError("Missing match or ball ID");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SCORING_API_URL}/api/v1/matches/${matchId}/balls/${ballId}/mr-judgement`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        body: JSON.stringify({ mr_judgement: judgement }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update judgement");
+      }
+
+      onConfirm(judgement);
+      onClose();
+    } catch (err) {
+      console.error(err);
+      setError("Failed to save judgement. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200">
@@ -120,6 +199,12 @@ export const MrJudgementModal: React.FC<MrJudgementModalProps> = ({
           Select the judgement for the match
         </p>
 
+        {error && (
+          <div className="mb-4 p-2 bg-red-50 border border-red-100 text-red-600 text-xs rounded-xl text-center">
+            {error}
+          </div>
+        )}
+
         {/* Judgement Tabs */}
         <div className="w-full mb-6">
           <label className="text-xs font-bold text-gray-700 block text-left px-1 mb-2">
@@ -130,6 +215,7 @@ export const MrJudgementModal: React.FC<MrJudgementModalProps> = ({
             {/* Correct */}
             <button
               type="button"
+              disabled={loading}
               onClick={() => setJudgement("Correct")}
               className={`flex-1 py-3 rounded-lg text-xs font-bold transition-all ${
                 judgement === "Correct"
@@ -143,9 +229,10 @@ export const MrJudgementModal: React.FC<MrJudgementModalProps> = ({
             {/* InCorrect */}
             <button
               type="button"
-              onClick={() => setJudgement("InCorrect")}
+              disabled={loading}
+              onClick={() => setJudgement("Incorrect")}
               className={`flex-1 py-3 rounded-lg text-xs font-bold transition-all ${
-                judgement === "InCorrect"
+                judgement === "Incorrect"
                   ? "bg-white text-red-600 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
               }`}
@@ -157,13 +244,11 @@ export const MrJudgementModal: React.FC<MrJudgementModalProps> = ({
 
         {/* Submit */}
         <button
-          onClick={() => {
-            onConfirm(judgement);
-            onClose();
-          }}
-          className="w-full py-3.5 bg-[#0F1117] hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] cursor-pointer"
+          onClick={handleSubmit}
+          disabled={loading}
+          className="w-full py-3.5 bg-[#0F1117] hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center disabled:opacity-50"
         >
-          Submit
+          {loading ? <Loader2 size={16} className="animate-spin mr-2" /> : "Submit"}
         </button>
       </div>
     </div>

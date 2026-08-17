@@ -172,8 +172,10 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
           "Content-Type": "application/json",
         }
       });
+    
       if (!response.ok) throw new Error(`Error fetching appeals: ${response.statusText}`);
       const data = await response.json();
+      console.log("Fetched appeals data:", data);
       return data;
     } catch (err) {
       console.error("Appeals Fetch Error:", err);
@@ -197,13 +199,16 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
         const mRes = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/${matchId}`, { credentials: 'include' });
         const associationData = await mRes.json();
         setMatchData(associationData);
+        console.log("Fetched match data:", associationData);
 
         if (associationData?.scoring_match_id) {
           const sRes = await fetch(`${SCORING_API_BASE}/api/v1/matches/${associationData.scoring_match_id}/scorecard`, {
             headers: { "ngrok-skip-browser-warning": "true" }
           });
+          
           if (sRes.ok) {
             const scDataArray = await sRes.json();
+            console.log("Fetched scorecard data:", scDataArray);
             if (Array.isArray(scDataArray) && scDataArray.length > 0) {
               setScorecard(scDataArray[0]);
             }
@@ -232,6 +237,7 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
         });
         if (bRes.ok) {
           const data = await bRes.json();
+          console.log(`Fetched balls for innings ${innNum}:`, data);
           const balls = data.balls || [];
           const soBalls = data.superover_balls || [];
           setInningBalls(balls);
@@ -244,6 +250,8 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
     };
     fetchBalls();
   }, [activeInnings, matchData]);
+
+  console.log("SSelected Ball Data:", selectedBallData);
 
   const topBatsmen = useMemo(() => {
     const targetInning = activeInnings === '1st' ? scorecard?.innings_1 : scorecard?.innings_2;
@@ -1133,53 +1141,58 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
 
       {/* --- ADD COMMENT MODAL COMPONENT RENDER --- */}
       <AddCommentModal 
-        isOpen={isAddCommentOpen} 
-        onClose={() => setIsAddCommentOpen(false)} 
-        ballInfo={selectedBallData} 
-        onConfirm={(comment) => {
-          const newAction: RefereeAction = {
-            id: Date.now(),
-            over: selectedBallData?.over_number ? `Over ${Math.floor(Number(selectedBallData.over_number)) + 1}` : "Over 1",
-            ball: selectedBallData?.over_number || "1.1",
-            batterBowler: selectedBallData?.batsman_name || "Unknown Batter",
-            actionTaken: "Comment Added",
-            details: comment,
-            by: "Tushar Pal",
-            role: "Umpire",
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-          };
-          setRefereeActions(prev => [newAction, ...prev]);
-        }} 
-      />
+  isOpen={isAddCommentOpen} 
+  onClose={() => setIsAddCommentOpen(false)} 
+  ballInfo={selectedBallData} 
+  matchId={matchData.scoring_match_id} 
+  matchData={scorecard}// Pass your match ID state/variable here
+  onConfirm={(comment) => {
+    const newAction: RefereeAction = {
+      id: Date.now(),
+      over: selectedBallData?.over_number ? `Over ${Math.floor(Number(selectedBallData.over_number)) + 1}` : "Over 1",
+      ball: selectedBallData?.over_number || "1.1",
+      batterBowler: selectedBallData?.batsman_name || "Unknown Batter",
+      actionTaken: "Comment Added",
+      details: comment,
+      by: "Tushar Pal",
+      role: "Umpire",
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    };
+    setRefereeActions(prev => [newAction, ...prev]);
+  }} 
+/>
 
-      {/* --- MR JUDGEMENT MODAL COMPONENT RENDER --- */}
-      <MrJudgementModal 
-        isOpen={isMrJudgementOpen} 
-        onClose={() => setIsMrJudgementOpen(false)} 
-        onConfirm={(judgement) => {
-          const newAction: RefereeAction = {
-            id: Date.now(),
-            over: selectedBallData?.over_number ? `Over ${Math.floor(Number(selectedBallData.over_number)) + 1}` : "Over 1",
-            ball: selectedBallData?.over_number || "1.1",
-            batterBowler: selectedBallData?.batsman_name || "Unknown Player",
-            actionTaken: "MR Judgement",
-            details: judgement,
-            by: "Ranjan Madugalle",
-            role: "Match Referee",
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-          };
-          setRefereeActions(prev => [newAction, ...prev]);
-        }} 
-      />
+{/* --- MR JUDGEMENT MODAL COMPONENT RENDER --- */}
+<MrJudgementModal 
+  isOpen={isMrJudgementOpen} 
+  onClose={() => setIsMrJudgementOpen(false)} 
+  matchId={matchData.scoring_match_id} // Pass your match ID state/variable here
+  ballId={selectedBallData?.id} // Pass the unique ball id (e.g. 2859) from your ball object
+  onConfirm={(judgement) => {
+    const newAction: RefereeAction = {
+      id: Date.now(),
+      over: selectedBallData?.over_number ? `Over ${Math.floor(Number(selectedBallData.over_number)) + 1}` : "Over 1",
+      ball: selectedBallData?.over_number || "1.1",
+      batterBowler: selectedBallData?.batsman_name || "Unknown Player",
+      actionTaken: "MR Judgement",
+      details: judgement,
+      by: "Ranjan Madugalle",
+      role: "Match Referee",
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    };
+    setRefereeActions(prev => [newAction, ...prev]);
+  }} 
+/>
 
       {/* --- TAKE ACTION 5-TAB MODAL COMPONENT RENDER --- */}
       <RefereeActionModal 
         isOpen={isTakeActionOpen} 
         onClose={() => setIsTakeActionOpen(false)} 
-        matchId={matchId}
+        matchId={matchData.scoring_match_id}
         ballInfo={selectedBallData} 
+        matchData={scorecard}
         onSaveAction={(newAction) => {
           setRefereeActions(prev => [newAction, ...prev]);
         }}
