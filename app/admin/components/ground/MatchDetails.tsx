@@ -43,18 +43,20 @@ interface ActiveFilter {
   label: string;
 }
 
-interface RefereeAction {
+interface CocCase {
   id: number;
-  over: string;
-  ball: string;
-  batterBowler: string;
-  actionTaken: string;
-  details: string;
-  by: string;
-  role: string;
-  time: string;
-  date: string;
+  ball_id: number;
+  match_id: string;
+  team: string | null;
+  player: string | null;
+  incident_category: string | null;
+  offence_level: string | null;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
 }
+
+
 
 const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTab, onTabChange }) => {
   const [internalTab, setInternalTab] = useState<'details' | 'referee'>('details');
@@ -84,13 +86,8 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
   const [isMrJudgementOpen, setIsMrJudgementOpen] = useState(false);
   const [isTakeActionOpen, setIsTakeActionOpen] = useState(false); // <-- Controller for 5-tab Action Modal
 
-  const [refereeActions, setRefereeActions] = useState<RefereeAction[]>([
-    { id: 1, over: "Over 13", ball: "12.6", batterBowler: "Marco Jansen", actionTaken: "Code of Conduct", details: "LBW Appeal\nUmpire Dissent – Level 1", by: "Ranjan Madugalle", role: "Match Referee", time: "04:32 PM", date: "21 Jan 2026" },
-    { id: 2, over: "Over 12", ball: "11.5", batterBowler: "Marco Jansen", actionTaken: "Appeal", details: "LBW Appeal\nUmpire Dissent – Level 1", by: "Ranjan Madugalle", role: "Match Referee", time: "04:32 PM", date: "21 Jan 2026" },
-    { id: 3, over: "Over 11", ball: "10.1", batterBowler: "Marco Jansen", actionTaken: "Suspected Actions", details: "LBW Appeal\nUmpire Dissent – Level 1", by: "Ranjan Madugalle", role: "Match Referee", time: "04:32 PM", date: "21 Jan 2026" },
-    { id: 4, over: "Over 10", ball: "9.4", batterBowler: "Jasprit Bumrah", actionTaken: "Code of Conduct", details: "Slow Over Rate\nWarning Issued", by: "Ranjan Madugalle", role: "Match Referee", time: "04:15 PM", date: "21 Jan 2026" },
-    { id: 5, over: "Over 08", ball: "7.2", batterBowler: "Virat Kohli", actionTaken: "Appeal", details: "Handled Ball\nReview Dismissed", by: "Ranjan Madugalle", role: "Match Referee", time: "03:50 PM", date: "21 Jan 2026" },
-  ]);
+  const [cocCases, setCocCases] = useState<CocCase[]>([]);
+  const [isCocLoading, setIsCocLoading] = useState(false);
 
   const LENGTHS = ['Yorker', 'Bouncer', 'Full', 'Half Volley', 'Good', 'Full Toss', 'Short'];
   const VARIATIONS = ['Inswinger', 'Outswinger', 'Seam Up', 'Cross Seam', 'Late in', 'Scrambled Seam', 'Late Out', 'Slower', 'Reverse Swing', 'Off Cutter', 'Leg Cutter', 'Back Off Hand', 'Knuckle', 'Split Finger', 'Beamer', 'Wide Yorker'];
@@ -175,7 +172,6 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
     
       if (!response.ok) throw new Error(`Error fetching appeals: ${response.statusText}`);
       const data = await response.json();
-      console.log("Fetched appeals data:", data);
       return data;
     } catch (err) {
       console.error("Appeals Fetch Error:", err);
@@ -192,6 +188,31 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
     getAppeals();
   }, [matchData, activeInnings]);
 
+  // Fetch CoC Cases when activeTab is referee and matchData is available
+  useEffect(() => {
+    const fetchCocCases = async () => {
+      if (activeTab === 'referee' && matchData?.scoring_match_id) {
+        setIsCocLoading(true);
+        try {
+          const res = await fetch(`${SCORING_API_BASE}/api/v1/matches/${matchData.scoring_match_id}/coc`, {
+            headers: { "ngrok-skip-browser-warning": "true" }
+          });
+          if (!res.ok) throw new Error("Failed to fetch CoC cases");
+          const data = await res.json();
+          console.log("Fetched CoC Cases:", data);
+          if (data && Array.isArray(data.coc_cases)) {
+            setCocCases(data.coc_cases);
+          }
+        } catch (err) {
+          console.error("Error fetching CoC actions:", err);
+        } finally {
+          setIsCocLoading(false);
+        }
+      }
+    };
+    fetchCocCases();
+  }, [activeTab, matchData, SCORING_API_BASE]);
+
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -199,7 +220,6 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
         const mRes = await fetch(`${process.env.NEXT_PUBLIC_Backend_URL}/matches/${matchId}`, { credentials: 'include' });
         const associationData = await mRes.json();
         setMatchData(associationData);
-        console.log("Fetched match data:", associationData);
 
         if (associationData?.scoring_match_id) {
           const sRes = await fetch(`${SCORING_API_BASE}/api/v1/matches/${associationData.scoring_match_id}/scorecard`, {
@@ -208,7 +228,6 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
           
           if (sRes.ok) {
             const scDataArray = await sRes.json();
-            console.log("Fetched scorecard data:", scDataArray);
             if (Array.isArray(scDataArray) && scDataArray.length > 0) {
               setScorecard(scDataArray[0]);
             }
@@ -221,7 +240,7 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
       }
     };
     fetchInitialData();
-  }, [matchId]);
+  }, [matchId, SCORING_API_BASE]);
 
   useEffect(() => {
     const fetchBalls = async () => {
@@ -237,7 +256,6 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
         });
         if (bRes.ok) {
           const data = await bRes.json();
-          console.log(`Fetched balls for innings ${innNum}:`, data);
           const balls = data.balls || [];
           const soBalls = data.superover_balls || [];
           setInningBalls(balls);
@@ -249,9 +267,7 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
       }
     };
     fetchBalls();
-  }, [activeInnings, matchData]);
-
-  console.log("SSelected Ball Data:", selectedBallData);
+  }, [activeInnings, matchData, SCORING_API_BASE]);
 
   const topBatsmen = useMemo(() => {
     const targetInning = activeInnings === '1st' ? scorecard?.innings_1 : scorecard?.innings_2;
@@ -1096,43 +1112,80 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
-                {refereeActions.map((action) => (
-                  <tr key={action.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-4 px-4 font-bold text-slate-900">{action.over}</td>
-                    <td className="py-4 px-4 font-semibold text-blue-600">{action.ball}</td>
-                    <td className="py-4 px-4 font-medium text-slate-800">{action.batterBowler}</td>
-                    <td className="py-4 px-4">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                        {action.actionTaken}
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-xs text-slate-600 font-medium whitespace-pre-line leading-relaxed">
-                      {action.details}
-                    </td>
-                    <td className="py-4 px-4">
-                      <p className="font-bold text-slate-900 text-xs">{action.by}</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">{action.role}</p>
-                    </td>
-                    <td className="py-4 px-4">
-                      <p className="font-medium text-slate-700 text-xs">{action.time}</p>
-                      <p className="text-[10px] text-slate-400">{action.date}</p>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button title="Delete" className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer">
-                          <Trash2 size={15} />
-                        </button>
-                        <button title="Video Review" className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer">
-                          <Video size={15} />
-                        </button>
-                        <button title="Edit" className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">
-                          <Edit2 size={15} />
-                        </button>
-                      </div>
+                {isCocLoading ? (
+                  <tr>
+                    <td colSpan={8} className="py-8 text-center text-slate-400 font-medium">
+                      Loading CoC actions...
                     </td>
                   </tr>
-                ))}
+                ) : cocCases.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-8 text-center text-slate-400 font-medium">
+                      No CoC actions found for this match.
+                    </td>
+                  </tr>
+                ) : (
+                  cocCases.map((item) => {
+                    const formattedDateObj = item.created_at ? new Date(item.created_at) : new Date();
+                    const timeStr = formattedDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const dateStr = formattedDateObj.toLocaleDateString();
+
+                    // Calculate Over and Ball Number from ball_id (e.g., ball_id 16 -> Over 2, Ball 4, assuming 6 balls per over)
+                    const ballOver = selectedBallData?.over ?? 0;
+const calculatedOver = Math.floor(ballOver) + 1;
+                    
+
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-4 px-4 font-bold text-slate-900">{calculatedOver}</td>
+                        <td className="py-4 px-4 font-semibold text-blue-600">{selectedBallData?.over}</td>
+                        <td className="py-4 px-4 font-medium text-slate-800">
+                          {item.player || item.team ? (
+                            <div>
+                              <span className="font-bold text-slate-900">{item.player || "Team Incident"}</span>
+                              {item.team && <p className="text-[11px] text-slate-500">{item.team}</p>}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic">General Incident</span>
+                          )}
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            {item.incident_category || item.offence_level || "Code of Conduct"}
+                          </div>
+                          {item.offence_level && item.incident_category && (
+                            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{item.offence_level}</p>
+                          )}
+                        </td>
+                        <td className="py-4 px-4 text-xs text-slate-600 font-medium whitespace-pre-line leading-relaxed max-w-xs">
+                          {item.description || "No description provided."}
+                        </td>
+                        <td className="py-4 px-4">
+                          <p className="font-bold text-slate-900 text-xs">{scorecard?.referee || "Match Referee"}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold">Referee</p>
+                        </td>
+                        <td className="py-4 px-4">
+                          <p className="font-medium text-slate-700 text-xs">{timeStr}</p>
+                          <p className="text-[10px] text-slate-400">{dateStr}</p>
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button title="Delete" className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer">
+                              <Trash2 size={15} />
+                            </button>
+                            {/* <button title="Video Review" className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer">
+                              <Video size={15} />
+                            </button> */}
+                            <button title="Edit" className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">
+                              <Edit2 size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -1141,60 +1194,36 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
 
       {/* --- ADD COMMENT MODAL COMPONENT RENDER --- */}
       <AddCommentModal 
-  isOpen={isAddCommentOpen} 
-  onClose={() => setIsAddCommentOpen(false)} 
-  ballInfo={selectedBallData} 
-  matchId={matchData.scoring_match_id} 
-  matchData={scorecard}// Pass your match ID state/variable here
-  onConfirm={(comment) => {
-    const newAction: RefereeAction = {
-      id: Date.now(),
-      over: selectedBallData?.over_number ? `Over ${Math.floor(Number(selectedBallData.over_number)) + 1}` : "Over 1",
-      ball: selectedBallData?.over_number || "1.1",
-      batterBowler: selectedBallData?.batsman_name || "Unknown Batter",
-      actionTaken: "Comment Added",
-      details: comment,
-      by: "Tushar Pal",
-      role: "Umpire",
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    };
-    setRefereeActions(prev => [newAction, ...prev]);
-  }} 
-/>
+        isOpen={isAddCommentOpen} 
+        onClose={() => setIsAddCommentOpen(false)} 
+        ballInfo={selectedBallData} 
+        matchId={matchData?.scoring_match_id} 
+        matchData={scorecard}
+        onConfirm={(comment) => {
+          // You can also refresh or append locally if needed
+        }} 
+      />
 
-{/* --- MR JUDGEMENT MODAL COMPONENT RENDER --- */}
-<MrJudgementModal 
-  isOpen={isMrJudgementOpen} 
-  onClose={() => setIsMrJudgementOpen(false)} 
-  matchId={matchData.scoring_match_id} // Pass your match ID state/variable here
-  ballId={selectedBallData?.id} // Pass the unique ball id (e.g. 2859) from your ball object
-  onConfirm={(judgement) => {
-    const newAction: RefereeAction = {
-      id: Date.now(),
-      over: selectedBallData?.over_number ? `Over ${Math.floor(Number(selectedBallData.over_number)) + 1}` : "Over 1",
-      ball: selectedBallData?.over_number || "1.1",
-      batterBowler: selectedBallData?.batsman_name || "Unknown Player",
-      actionTaken: "MR Judgement",
-      details: judgement,
-      by: "Ranjan Madugalle",
-      role: "Match Referee",
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    };
-    setRefereeActions(prev => [newAction, ...prev]);
-  }} 
-/>
+      {/* --- MR JUDGEMENT MODAL COMPONENT RENDER --- */}
+      <MrJudgementModal 
+        isOpen={isMrJudgementOpen} 
+        onClose={() => setIsMrJudgementOpen(false)} 
+        matchId={matchData?.scoring_match_id} 
+        ballId={selectedBallData?.id} 
+        onConfirm={(judgement) => {
+          // You can also refresh or append locally if needed
+        }} 
+      />
 
       {/* --- TAKE ACTION 5-TAB MODAL COMPONENT RENDER --- */}
       <RefereeActionModal 
         isOpen={isTakeActionOpen} 
         onClose={() => setIsTakeActionOpen(false)} 
-        matchId={matchData.scoring_match_id}
+        matchId={matchData?.scoring_match_id}
         ballInfo={selectedBallData} 
         matchData={scorecard}
         onSaveAction={(newAction) => {
-          setRefereeActions(prev => [newAction, ...prev]);
+          // Optional local state update if needed
         }}
       />
 

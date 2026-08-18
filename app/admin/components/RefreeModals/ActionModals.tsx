@@ -441,193 +441,590 @@ export const RefereeActionModal: React.FC<RefereeActionModalProps> = ({
 
         {/* ─── TAB 1: CODE OF CONDUCT (COC) ─── */}
         {activeTab === 'coc' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-3 border border-indigo-100 text-[#6366F1]">
-                ⚖️
-              </div>
-              <h3 className="text-xl font-bold text-black">Code Of Conduct</h3>
-              <p className="text-slate-600 text-xs font-medium mt-0.5">Review and Record Player/ Match Officials Behaviours.</p>
-            </div>
+  <div className="space-y-6 animate-in fade-in duration-200">
+    {/* HEADER */}
+    <div className="text-center">
+      <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-3 border border-indigo-100 text-[#6366F1]">
+        ⚖️
+      </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* CUSTOM TEAM DROPDOWN */}
-              <div className="relative">
-                <label className="text-xs font-bold text-black block mb-1.5">Team</label>
-                <div 
-                  onClick={() => setIsTeamDropdownOpen(!isTeamDropdownOpen)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-black flex items-center justify-between cursor-pointer"
+      <h3 className="text-xl font-bold text-black">
+        Code Of Conduct
+      </h3>
+
+      <p className="text-slate-600 text-xs font-medium mt-0.5">
+        Review and Record Player/ Match Officials Behaviours.
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      {/* ================= TEAM ================= */}
+      <div className="relative">
+        <label className="text-xs font-bold text-black block mb-1.5">
+          Team
+        </label>
+
+        <div
+          onClick={() => {
+            setIsTeamDropdownOpen(!isTeamDropdownOpen);
+            setIsPlayerDropdownOpen(false);
+            setIsCocCategoryOpen(false);
+            setIsCocLevelOpen(false);
+          }}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-black flex items-center justify-between cursor-pointer"
+        >
+          <span className="truncate">
+            {cocTeam || "Select Your Team"}
+          </span>
+
+          <ChevronDown
+            size={16}
+            className={`text-black shrink-0 transition-transform ${
+              isTeamDropdownOpen ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+
+        {isTeamDropdownOpen && (
+          <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 max-h-60 overflow-y-auto space-y-1 text-xs font-bold text-black custom-scrollbar">
+            {teamOptions.length > 0 ? (
+              teamOptions.map((team) => (
+                <div
+                  key={team}
+                  onClick={() => {
+                    setCocTeam(team);
+                    setCocPlayer("");
+                    setIsTeamDropdownOpen(false);
+                  }}
+                  className={`px-3 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 transition-colors ${
+                    cocTeam === team
+                      ? "bg-indigo-50 text-indigo-600"
+                      : "hover:bg-slate-50"
+                  }`}
                 >
-                  <span className="truncate">{cocTeam || "Select Your Team"}</span>
-                  <ChevronDown size={16} className="text-black shrink-0" />
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      cocTeam === team
+                        ? "bg-indigo-600"
+                        : "bg-black"
+                    }`}
+                  />
+
+                  {team}
+                </div>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-slate-400 text-center">
+                No teams available
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ================= PLAYER ================= */}
+      <div className="relative">
+        <label className="text-xs font-bold text-black block mb-1.5">
+          Player
+        </label>
+
+        <div
+          onClick={() => {
+            if (!cocTeam) return;
+
+            setIsPlayerDropdownOpen(!isPlayerDropdownOpen);
+            setIsTeamDropdownOpen(false);
+            setIsCocCategoryOpen(false);
+            setIsCocLevelOpen(false);
+          }}
+          className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-black flex items-center justify-between ${
+            cocTeam
+              ? "cursor-pointer"
+              : "cursor-not-allowed opacity-60"
+          }`}
+        >
+          <span className="truncate">
+            {cocPlayer || "Select Player"}
+          </span>
+
+          <ChevronDown
+            size={16}
+            className={`text-black shrink-0 transition-transform ${
+              isPlayerDropdownOpen ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+
+        {isPlayerDropdownOpen && (
+          <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 max-h-60 overflow-y-auto space-y-1 text-xs font-bold text-black custom-scrollbar">
+            {playerOptions.length > 0 ? (
+              playerOptions.map((player) => (
+                <div
+                  key={player}
+                  onClick={() => {
+                    setCocPlayer(player);
+                    setIsPlayerDropdownOpen(false);
+                  }}
+                  className={`px-3 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 transition-colors ${
+                    cocPlayer === player
+                      ? "bg-indigo-50 text-indigo-600"
+                      : "hover:bg-slate-50"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      cocPlayer === player
+                        ? "bg-indigo-600"
+                        : "bg-black"
+                    }`}
+                  />
+
+                  {player}
+                </div>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-slate-400 text-center">
+                Select team first
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ================= INCIDENT CATEGORY ================= */}
+      <div className="relative md:col-span-2">
+        <label className="text-xs font-bold text-black block mb-1.5">
+          Incident Category
+        </label>
+
+        <div
+          onClick={() => {
+            setIsCocCategoryOpen(!isCocCategoryOpen);
+            setIsTeamDropdownOpen(false);
+            setIsPlayerDropdownOpen(false);
+            setIsCocLevelOpen(false);
+          }}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-black flex items-center justify-between cursor-pointer"
+        >
+          <span
+            className={`truncate ${
+              cocCategory || customCocOther
+                ? "text-black"
+                : "text-slate-400"
+            }`}
+          >
+            {cocCategory === "Others"
+              ? customCocOther || "Others"
+              : cocCategory || "Select Incident Category"}
+          </span>
+
+          <ChevronDown
+            size={16}
+            className={`text-black shrink-0 transition-transform ${
+              isCocCategoryOpen ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+
+        {/* CATEGORY DROPDOWN */}
+        {isCocCategoryOpen && (
+          <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden text-xs font-medium text-black">
+
+            <div className="max-h-[420px] overflow-y-auto custom-scrollbar">
+
+              {/* ================= PLAYER CONDUCT ================= */}
+              <div>
+                <div className="bg-[#F7F7F9] px-4 py-2.5 border-b border-slate-200">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wide">
+                    Player Conduct
+                  </p>
                 </div>
 
-                {isTeamDropdownOpen && (
-                  <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 max-h-60 overflow-y-auto space-y-1 text-xs font-bold text-black">
-                    {teamOptions.length > 0 ? (
-                      teamOptions.map((team) => (
-                        <div 
-                          key={team} 
-                          onClick={() => { 
-                            setCocTeam(team); 
-                            setIsTeamDropdownOpen(false); 
-                          }} 
-                          className="px-3 py-2.5 hover:bg-slate-50 rounded-xl cursor-pointer flex items-center gap-2"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-black"></span> {team}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="px-3 py-2 text-slate-400 text-center">No teams available</div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* CUSTOM PLAYER DROPDOWN */}
-              <div className="relative">
-                <label className="text-xs font-bold text-black block mb-1.5">Player</label>
-                <div 
-                  onClick={() => setIsPlayerDropdownOpen(!isPlayerDropdownOpen)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-black flex items-center justify-between cursor-pointer"
-                >
-                  <span className="truncate">{cocPlayer || "Select Player"}</span>
-                  <ChevronDown size={16} className="text-black shrink-0" />
-                </div>
-
-                {isPlayerDropdownOpen && (
-                  <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 max-h-60 overflow-y-auto space-y-1 text-xs font-bold text-black custom-scrollbar">
-                    {playerOptions.length > 0 ? (
-                      playerOptions.map((player) => (
-                        <div 
-                          key={player} 
-                          onClick={() => { 
-                            setCocPlayer(player); 
-                            setIsPlayerDropdownOpen(false); 
-                          }} 
-                          className="px-3 py-2.5 hover:bg-slate-50 rounded-xl cursor-pointer flex items-center gap-2"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-black"></span> {player}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="px-3 py-2 text-slate-400 text-center">Select team first</div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* INCIDENT CATEGORY DROPDOWN */}
-              <div className="relative md:col-span-2">
-                <label className="text-xs font-bold text-black block mb-1.5">Incident Category</label>
-                <div 
-                  onClick={() => setIsCocCategoryOpen(!isCocCategoryOpen)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-black flex items-center justify-between cursor-pointer"
-                >
-                  <span className="truncate">{cocCategory === 'Others' ? (customCocOther || 'Others') : (cocCategory || "Select Incident Category")}</span>
-                  <ChevronDown size={16} className="text-black shrink-0" />
-                </div>
-
-                {isCocCategoryOpen && (
-                  <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-3 max-h-72 overflow-y-auto space-y-3 text-xs font-bold text-black custom-scrollbar">
-                    <div>
-                      <p className="text-[10px] text-slate-400 uppercase font-extrabold px-2 mb-1">Player Conduct</p>
-                      {["Verbal Abuse / Offensive Language", "Aggressive Behaviour", "Dissent", "Provocative Gesture"].map((item) => (
-                        <div key={item} onClick={() => { setCocCategory(item); setIsCocCategoryOpen(false); }} className="px-3 py-2 hover:bg-slate-50 rounded-xl cursor-pointer flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-black"></span> {item}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="border-t border-slate-100 pt-2">
-                      <p className="text-[10px] text-slate-400 uppercase font-extrabold px-2 mb-1">On-Field Conduct</p>
-                      {["Dangerous Bowling", "Time Wasting", "Deliberate Distraction", "Ball Tampering"].map((item) => (
-                        <div key={item} onClick={() => { setCocCategory(item); setIsCocCategoryOpen(false); }} className="px-3 py-2 hover:bg-slate-50 rounded-xl cursor-pointer flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-black"></span> {item}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="border-t border-slate-100 pt-2">
-                      <div onClick={() => { setCocCategory("Others"); setIsCocCategoryOpen(false); }} className="px-3 py-2 hover:bg-slate-50 rounded-xl cursor-pointer flex items-center gap-2 text-indigo-600 font-extrabold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span> Others
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {cocCategory === 'Others' && (
-                  <div className="mt-2 relative">
-                    <input 
-                      type="text" 
-                      value={customCocOther} 
-                      onChange={(e) => setCustomCocOther(e.target.value)}
-                      placeholder="Write Others kind of Incident Here" 
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-black outline-none pr-10"
+                {[
+                  "Verbal Abuse / Offensive Language",
+                  "Aggressive Behaviour",
+                  "Dissent Against Decision",
+                  "Provocative Gesture",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    onClick={() => {
+                      setCocCategory(item);
+                      setCustomCocOther("");
+                      setIsCocCategoryOpen(false);
+                    }}
+                    className={`px-4 py-3 cursor-pointer flex items-center gap-3 border-b border-slate-100 transition-colors ${
+                      cocCategory === item
+                        ? "bg-indigo-50"
+                        : "hover:bg-slate-50"
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        cocCategory === item
+                          ? "bg-indigo-600"
+                          : "bg-[#6366F1]"
+                      }`}
                     />
-                    <Send size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-600" />
+
+                    <span
+                      className={
+                        cocCategory === item
+                          ? "text-indigo-600 font-semibold"
+                          : "text-black"
+                      }
+                    >
+                      {item}
+                    </span>
                   </div>
-                )}
+                ))}
               </div>
 
-              {/* OFFENCE LEVEL DROPDOWN */}
-              <div className="relative md:col-span-2">
-                <label className="text-xs font-bold text-black block mb-1.5">Offence Level</label>
-                <div 
-                  onClick={() => setIsCocLevelOpen(!isCocLevelOpen)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-black flex items-center justify-between cursor-pointer"
-                >
-                  <span className="truncate">{cocLevel || "Select Offence Level"}</span>
-                  <ChevronDown size={16} className="text-black shrink-0" />
+              {/* ================= ON-FIELD CONDUCT ================= */}
+              <div>
+                <div className="bg-[#F7F7F9] px-4 py-2.5 border-b border-slate-200">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wide">
+                    On-Field Conduct
+                  </p>
                 </div>
 
-                {isCocLevelOpen && (
-                  <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-1 text-xs font-bold text-black">
-                    {[
-                      { title: "Level 1", desc: "Low-level misconduct" },
-                      { title: "Level 2", desc: "Repeated / more serious misconduct" },
-                      { title: "Level 3", desc: "Significant breach of conduct" },
-                      { title: "Level 4", desc: "Major misconduct / integrity breach" },
-                    ].map((lvl) => (
-                      <div key={lvl.title} onClick={() => { setCocLevel(lvl.title); setIsCocLevelOpen(false); }} className="p-3 hover:bg-slate-50 rounded-xl cursor-pointer">
-                        <p className="font-extrabold text-black">{lvl.title}</p>
-                        <p className="text-[10px] text-slate-400 font-medium">{lvl.desc}</p>
-                      </div>
-                    ))}
+                {[
+                  "Dangerous Bowling",
+                  "Time Wasting",
+                  "Deliberate Distraction",
+                  "Ball Tampering",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    onClick={() => {
+                      setCocCategory(item);
+                      setCustomCocOther("");
+                      setIsCocCategoryOpen(false);
+                    }}
+                    className={`px-4 py-3 cursor-pointer flex items-center gap-3 border-b border-slate-100 transition-colors ${
+                      cocCategory === item
+                        ? "bg-indigo-50"
+                        : "hover:bg-slate-50"
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        cocCategory === item
+                          ? "bg-indigo-600"
+                          : "bg-[#6366F1]"
+                      }`}
+                    />
+
+                    <span
+                      className={
+                        cocCategory === item
+                          ? "text-indigo-600 font-semibold"
+                          : "text-black"
+                      }
+                    >
+                      {item}
+                    </span>
                   </div>
-                )}
+                ))}
               </div>
-            </div>
 
-            <div>
-              <label className="text-xs font-bold text-black block mb-1.5">Description</label>
-              <textarea 
-                rows={4}
-                value={cocDesc}
-                onChange={(e) => setCocDesc(e.target.value)}
-                placeholder="Provide detailed context of the incident..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-medium text-black outline-none focus:border-black resize-none"
-              />
-            </div>
+              {/* ================= MATCH OFFICIAL ================= */}
+              <div>
+                <div className="bg-[#F7F7F9] px-4 py-2.5 border-b border-slate-200">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wide">
+                    Match Official
+                  </p>
+                </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-              <button 
-                onClick={handleCocSubmit}
-                disabled={loading}
-                className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-black text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center disabled:opacity-50"
-              >
-                {loading && <Loader2 size={16} className="animate-spin mr-2" />}
-                Submit Case
-              </button>
-              <button 
-                onClick={handleNextTab}
-                className="px-6 py-3 bg-[#0F1117] hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer"
-              >
-                Next →
-              </button>
+                {[
+                  "Disrespect Toward Official",
+                  "Intimidation of Official",
+                  "Failure to Follow Instruction",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    onClick={() => {
+                      setCocCategory(item);
+                      setCustomCocOther("");
+                      setIsCocCategoryOpen(false);
+                    }}
+                    className={`px-4 py-3 cursor-pointer flex items-center gap-3 border-b border-slate-100 transition-colors ${
+                      cocCategory === item
+                        ? "bg-indigo-50"
+                        : "hover:bg-slate-50"
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        cocCategory === item
+                          ? "bg-indigo-600"
+                          : "bg-[#6366F1]"
+                      }`}
+                    />
+
+                    <span
+                      className={
+                        cocCategory === item
+                          ? "text-indigo-600 font-semibold"
+                          : "text-black"
+                      }
+                    >
+                      {item}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* ================= MATCH INTEGRITY ================= */}
+              <div>
+                <div className="bg-[#F7F7F9] px-4 py-2.5 border-b border-slate-200">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wide">
+                    Match Integrity
+                  </p>
+                </div>
+
+                {[
+                  "Suspected Match Manipulation",
+                  "Betting-Related Violation",
+                  "Corrupt Approach",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    onClick={() => {
+                      setCocCategory(item);
+                      setCustomCocOther("");
+                      setIsCocCategoryOpen(false);
+                    }}
+                    className={`px-4 py-3 cursor-pointer flex items-center gap-3 border-b border-slate-100 transition-colors ${
+                      cocCategory === item
+                        ? "bg-indigo-50"
+                        : "hover:bg-slate-50"
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        cocCategory === item
+                          ? "bg-indigo-600"
+                          : "bg-[#6366F1]"
+                      }`}
+                    />
+
+                    <span
+                      className={
+                        cocCategory === item
+                          ? "text-indigo-600 font-semibold"
+                          : "text-black"
+                      }
+                    >
+                      {item}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* ================= OTHERS ================= */}
+              <div>
+                <div
+                  onClick={() => {
+                    setCocCategory("Others");
+                    setIsCocCategoryOpen(false);
+                  }}
+                  className={`px-4 py-3.5 cursor-pointer flex items-center gap-3 transition-colors ${
+                    cocCategory === "Others"
+                      ? "bg-indigo-50"
+                      : "hover:bg-slate-50"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      cocCategory === "Others"
+                        ? "bg-indigo-600"
+                        : "bg-[#6366F1]"
+                    }`}
+                  />
+
+                  <span
+                    className={
+                      cocCategory === "Others"
+                        ? "text-indigo-600 font-bold"
+                        : "text-black font-semibold"
+                    }
+                  >
+                    Others
+                  </span>
+                </div>
+              </div>
+
             </div>
           </div>
         )}
+
+        {/* ================= OTHERS INPUT ================= */}
+        {cocCategory === "Others" && (
+          <div className="mt-2 relative">
+            <input
+              type="text"
+              value={customCocOther}
+              onChange={(e) => setCustomCocOther(e.target.value)}
+              placeholder="Write Others kind of Incident Here"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-black outline-none pr-10 focus:border-indigo-400"
+            />
+
+            <Send
+              size={14}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-600"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ================= OFFENCE LEVEL ================= */}
+      <div className="relative md:col-span-2">
+        <label className="text-xs font-bold text-black block mb-1.5">
+          Offence Level
+        </label>
+
+        <div
+          onClick={() => {
+            setIsCocLevelOpen(!isCocLevelOpen);
+            setIsTeamDropdownOpen(false);
+            setIsPlayerDropdownOpen(false);
+            setIsCocCategoryOpen(false);
+          }}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-black flex items-center justify-between cursor-pointer"
+        >
+          <span
+            className={
+              cocLevel ? "text-black" : "text-slate-400"
+            }
+          >
+            {cocLevel || "Select Offence Level"}
+          </span>
+
+          <ChevronDown
+            size={16}
+            className={`text-black shrink-0 transition-transform ${
+              isCocLevelOpen ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+
+        {/* LEVEL DROPDOWN */}
+        {isCocLevelOpen && (
+          <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden">
+
+            {[
+              {
+                title: "Level 1 · Minor",
+                value: "Level 1",
+                desc: "Low-level misconduct",
+              },
+              {
+                title: "Level 2 · Moderate",
+                value: "Level 2",
+                desc: "Repeated / more serious misconduct",
+              },
+              {
+                title: "Level 3 · Serious",
+                value: "Level 3",
+                desc: "Significant breach of conduct",
+              },
+              {
+                title: "Level 4 · Severe",
+                value: "Level 4",
+                desc: "Major misconduct / integrity breach",
+              },
+            ].map((lvl) => (
+              <div
+                key={lvl.value}
+                onClick={() => {
+                  setCocLevel(lvl.value);
+                  setIsCocLevelOpen(false);
+                }}
+                className={`px-4 py-3.5 cursor-pointer flex items-start gap-3 border-b border-slate-100 last:border-b-0 transition-colors ${
+                  cocLevel === lvl.value
+                    ? "bg-indigo-50"
+                    : "hover:bg-slate-50"
+                }`}
+              >
+                {/* RADIO CIRCLE */}
+                <div
+                  className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                    cocLevel === lvl.value
+                      ? "border-indigo-600"
+                      : "border-slate-300"
+                  }`}
+                >
+                  {cocLevel === lvl.value && (
+                    <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                  )}
+                </div>
+
+                <div>
+                  <p
+                    className={`text-xs font-bold ${
+                      cocLevel === lvl.value
+                        ? "text-indigo-600"
+                        : "text-black"
+                    }`}
+                  >
+                    {lvl.title}
+                  </p>
+
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                    {lvl.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
+
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* ================= DESCRIPTION ================= */}
+    <div>
+      <label className="text-xs font-bold text-black block mb-1.5">
+        Description
+      </label>
+
+      <textarea
+        rows={4}
+        value={cocDesc}
+        onChange={(e) => setCocDesc(e.target.value)}
+        placeholder="Provide detailed context of the incident..."
+        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-medium text-black outline-none focus:border-black resize-none"
+      />
+    </div>
+
+    {/* ================= FOOTER BUTTONS ================= */}
+    <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+      <button
+        onClick={handleCocSubmit}
+        disabled={loading}
+        className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-black text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center disabled:opacity-50"
+      >
+        {loading && (
+          <Loader2
+            size={16}
+            className="animate-spin mr-2"
+          />
+        )}
+
+        Submit Case
+      </button>
+
+      <button
+        onClick={handleNextTab}
+        className="px-6 py-3 bg-[#0F1117] hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer"
+      >
+        Next →
+      </button>
+    </div>
+  </div>
+)}
 
         {/* ─── TAB 2: APPEAL ─── */}
         {activeTab === 'appeal' && (
