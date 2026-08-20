@@ -130,7 +130,7 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
   const [isAppealOpen, setIsAppealOpen] = useState(false);
   const [appealFilters, setAppealFilters] = useState<Record<string, boolean>>({
     "Umpire's Call": false,
-    "Stay": false,
+    "Retained": false,
     "Overturned": false,
     "Umpire 1": false,
     "umpire 2": false,
@@ -141,7 +141,7 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
 
   const filterOptions = useMemo(() => ({
     "Umpire's Call": "Umpire's Call",
-    "Stay": "Stay",
+    "Retained": "Retained",
     "Overturned": "Overturned",
     [u1Name]: "Umpire 1", 
     [u2Name]: "Umpire 2"
@@ -172,6 +172,7 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
     
       if (!response.ok) throw new Error(`Error fetching appeals: ${response.statusText}`);
       const data = await response.json();
+      console.log("Fetched Appeals Data:", data);
       return data;
     } catch (err) {
       console.error("Appeals Fetch Error:", err);
@@ -256,6 +257,7 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
         });
         if (bRes.ok) {
           const data = await bRes.json();
+          console.log("Fetched Balls Data:", data);
           const balls = data.balls || [];
           const soBalls = data.superover_balls || [];
           setInningBalls(balls);
@@ -361,7 +363,7 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
         activeAppealFilters.length === 0 ||
         (appeal &&
           activeAppealFilters.some((filterKey) => {
-            if (["Stay", "Umpire's Call", "Overturned"].includes(filterKey)) return appeal.status === filterKey;
+            if (["Retained", "Umpire's Call", "Overturned"].includes(filterKey)) return appeal.status === filterKey;
             const u1 = scorecard?.umpire1;
             const u2 = scorecard?.umpire2;
             const currentUmpire = appeal.metadata?.umpire;
@@ -1057,9 +1059,9 @@ const MatchAnalysis: React.FC<MatchAnalysisProps> = ({ matchId, externalActiveTa
 
               <div className="space-y-4">
                 {[
-                  { l: 'Delivery Speed', v: selectedBallData?.delivery_speed || '145.2 Km/h' },
+                  { l: 'Variation', v: selectedBallData?.balling_variation || '145.2 Km/h' },
                   { l: 'Length', v: selectedBallData?.balling_length || 'Good Length' },
-                  { l: 'Line', v: selectedBallData?.line || 'Outside Off' },
+                  { l: 'Area', v: selectedBallData?.fielding_type || 'Outside Off' },
                   { l: 'Shot Type', v: selectedBallData?.shot_type || 'Square Cut' },
                   { l: 'Wicket', v: selectedBallData?.is_wicket ? `Yes (${selectedBallData.wicket_type})` : 'No' },
                   { l: 'Extra Runs', v: selectedBallData?.extra_runs || 0 },
